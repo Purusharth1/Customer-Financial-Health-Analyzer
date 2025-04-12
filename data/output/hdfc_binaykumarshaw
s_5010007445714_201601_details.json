@@ -1,0 +1,20 @@
+{
+    "personal_details": {
+        "title": "MR.",
+        "name": "BINAYKUMARSHAW\nS",
+        "address": "Address not found",
+        "city": "KOLKATA700091",
+        "state": "WESTBENGAL",
+        "account_number": "5010007445714",
+        "ifsc_code": "",
+        "micr_code": "700240028",
+        "branch": "",
+        "email": "vinay20@live.com",
+        "customer_id": "",
+        "account_opening_date": "",
+        "statement_period": {
+            "from": "01/01/2016",
+            "to": "12/10/2016"
+        }
+    }
+}

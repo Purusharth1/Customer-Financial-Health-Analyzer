@@ -1,0 +1,20 @@
+{
+    "personal_details": {
+        "title": "MR.",
+        "name": "ANUPDUBEY\nS",
+        "address": "Address not found",
+        "city": "THANE401105",
+        "state": "MAHARASHTRA",
+        "account_number": "5010015807763",
+        "ifsc_code": "",
+        "micr_code": "400240150",
+        "branch": "",
+        "email": "ANUPDUBEY788@GMAIL.COM",
+        "customer_id": "",
+        "account_opening_date": "",
+        "statement_period": {
+            "from": "01/06/2018",
+            "to": "10/10/2018"
+        }
+    }
+}
