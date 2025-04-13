@@ -1,7 +1,3 @@
-llm:
-  api_key: "your_grok_api_key"  # Replace with actual key
 paths:
   input_dir: "data/input/"
   output_dir: "data/output/"
-logging:
-  mlflow_tracking_uri: "file:logs/mlruns"

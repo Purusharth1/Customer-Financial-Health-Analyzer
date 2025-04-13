@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/352981871570841202/9b46034bbb464583bc2a6ebf1a941921/artifacts
+end_time: 1744566085051
+entry_point_name: ''
+experiment_id: '352981871570841202'
+lifecycle_stage: active
+run_id: 9b46034bbb464583bc2a6ebf1a941921
+run_name: powerful-crane-305
+run_uuid: 9b46034bbb464583bc2a6ebf1a941921
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744566085033
+status: 3
+tags: []
+user_id: aditya

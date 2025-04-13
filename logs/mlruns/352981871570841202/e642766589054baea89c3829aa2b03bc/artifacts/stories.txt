@@ -1,0 +1,35 @@
+2016-01: Sure, here's a summary of the month's financial activity for 2016-01:
+
+Total expenses were 49294.71 INR, and total income was 49218.90 INR, resulting in a net loss of 178.81 INR.
+2016-02: The total amount spent in 2016-02 was 23658.86 INR, while the total amount received was 24727.49 INR. There was an expenditure of 7 INR on retail, 2 INR on income, 2 INR on other expenses and 1 INR on utilities.
+2016-03: Sure, here's the summary you requested:
+
+In 2016-03, the user spent 38,050 INR and received 59,506 INR, resulting in a net surplus of 29,456 INR.
+2016-04: Sure, here's the summary you requested:
+
+In 2016-04, the total expenditure was 48,600.00 INR, with a net surplus of 7,046.94 INR.
+2016-05: Sure, here is the summary you requested:
+
+In 2016-05, the total amount spent was 57,697.01 INR, while the total amount received was 72,805.14 INR.
+2016-06: In 2016-06, the total expenditure was 9279.00 INR, while the total income was 78246.26 INR. The category breakdown showed that the majority of expenses were related to 'Expense (retail)'.
+2016-07: Sure, here's a summary of the month's financial activity for 2016-07:
+
+Total expenditure was higher than income, indicating a net inflow of 22831.56 INR.
+2016-08: Sure, here's a summary of the month's financial activity for 2016-08:
+
+Total spending: 57984.73 INR. Total income: 57119.01 INR, with a net loss of 8735.72 INR.
+2016-09: Sure, here's a summary of the month's financial activity for 2016-09:
+
+Total expenses exceeded total income by 35.56%.
+2016-10: The financial activity for the month of 2016-10 showed a significant inflow of 295,99.88 INR, with a total expenditure of 4500.00 INR.
+2018-06: In 2018-06, the total expenditure was 11445.00 INR, while the total received was 52941.14 INR, resulting in a net balance of 41496.14 INR.
+2018-07: Sure, here's a summary of the month's financial activity for 2018-07:
+
+**Total spent: 40414.00 INR**
+**Total received: 100551.98 INR**
+**Category breakdown: {'Expense (retail)': 13, 'Income': 10, 'Expense (other)': 1}
+2018-08: The month saw no financial activity and resulted in a net surplus of 40325.30 INR.
+2018-09: Sure, here's the summary you requested:
+
+Total spending and receiving amounted to 15,802.00 INR, with 10 INR going to income and 9 and 1 INR being spent on retail and other expenses, respectively.
+2018-10: In 2018-10, the total expenditure was 10,060.00 INR, while the total income was 40,057.00 INR, resulting in a net loss of 30,017.00 INR.
