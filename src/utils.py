@@ -1,14 +1,14 @@
 import logging
-from typing import Dict
 import os
+import sys
+from pathlib import Path
 
 import mlflow
 import yaml
-from pathlib import Path
-import sys
 
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.config import LLMConfig
+
 
 def setup_mlflow() -> None:
     """Configure MLflow tracking."""
@@ -33,10 +33,10 @@ def sanitize_metric_name(name: str) -> str:
     return re.sub(invalid_chars, "_", name)
 
 
-def load_config() -> Dict:
+def load_config() -> dict:
     """Load configuration from config.yaml."""
     try:
-        with open("config/config.yaml", "r") as f:
+        with open("config/config.yaml") as f:
             return yaml.safe_load(f) or {}
     except FileNotFoundError:
         logging.warning("config.yaml not found, returning empty config")
@@ -46,7 +46,7 @@ def load_config() -> Dict:
 def setup_logging() -> None:
     """Configure logging based on logging.yaml."""
     try:
-        with open("config/logging.yaml", "r") as f:
+        with open("config/logging.yaml") as f:
             config = yaml.safe_load(f)
             logging.config.dictConfig(config)
     except FileNotFoundError:
@@ -59,5 +59,5 @@ def get_llm_config() -> LLMConfig:
     llm_settings = config.get("llm", {})
     return LLMConfig(
         model_name=llm_settings.get("model_name", "gemma:2b"),
-        api_endpoint=llm_settings.get("api_endpoint", "http://localhost:11434")
+        api_endpoint=llm_settings.get("api_endpoint", "http://localhost:11434"),
     )

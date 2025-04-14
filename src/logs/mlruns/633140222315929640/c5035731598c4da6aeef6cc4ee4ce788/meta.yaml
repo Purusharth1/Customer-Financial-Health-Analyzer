@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/src/logs/mlruns/633140222315929640/c5035731598c4da6aeef6cc4ee4ce788/artifacts
+end_time: 1744598785090
+entry_point_name: ''
+experiment_id: '633140222315929640'
+lifecycle_stage: active
+run_id: c5035731598c4da6aeef6cc4ee4ce788
+run_name: Timeline_Construction
+run_uuid: c5035731598c4da6aeef6cc4ee4ce788
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744598785083
+status: 4
+tags: []
+user_id: aditya

@@ -1,16 +1,16 @@
-from typing import Optional
 import logging
 from pathlib import Path
-import pandas as pd
+
 import matplotlib.pyplot as plt
 import mlflow
-from utils import setup_mlflow, sanitize_metric_name
+import pandas as pd
+
+from utils import setup_mlflow
 
 logging.basicConfig(level=logging.INFO)
 
-def generate_visualizations(input_csv: str, output_dir: str) -> Optional[dict]:
-    """
-    Generate pie, bar, and line charts for transactions.
+def generate_visualizations(input_csv: str, output_dir: str) -> dict | None:
+    """Generate pie, bar, and line charts for transactions.
     
     Args:
         input_csv: Path to categorized transactions CSV.
@@ -18,19 +18,20 @@ def generate_visualizations(input_csv: str, output_dir: str) -> Optional[dict]:
     
     Returns:
         Dictionary with chart file paths.
+
     """
     setup_mlflow()
     logging.info("Generating visualizations")
-    
+
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     results = {}
-    
+
     with mlflow.start_run(run_name="Visualization"):
         mlflow.log_param("input_csv", input_csv)
         df = pd.read_csv(input_csv)
         df["parsed_date"] = pd.to_datetime(df["parsed_date"])
         mlflow.log_metric("transactions_visualized", len(df))
-        
+
         # Pie Chart: Expense Breakdown
         expenses = df[df["category"].str.contains("Expense")].groupby("category")["Withdrawal (INR)"].sum()
         if not expenses.empty:
@@ -42,7 +43,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> Optional[dict]:
             plt.close()
             results["pie_chart"] = str(pie_file)
             mlflow.log_artifact(pie_file)
-        
+
         # Bar Chart: Monthly Spending
         df["month"] = df["parsed_date"].dt.to_period("M")
         monthly = df[df["category"].str.contains("Expense")].groupby("month")["Withdrawal (INR)"].sum()
@@ -57,7 +58,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> Optional[dict]:
             plt.close()
             results["bar_chart"] = str(bar_file)
             mlflow.log_artifact(bar_file)
-        
+
         # Line Chart: Spending Trends
         daily = df[df["category"].str.contains("Expense")].groupby("parsed_date")["Withdrawal (INR)"].sum()
         if not daily.empty:
@@ -71,7 +72,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> Optional[dict]:
             plt.close()
             results["line_chart"] = str(line_file)
             mlflow.log_artifact(line_file)
-        
+
         logging.info("Visualizations generated")
         return results
 

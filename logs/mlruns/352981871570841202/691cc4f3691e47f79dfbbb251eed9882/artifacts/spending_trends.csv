@@ -1,0 +1,5 @@
+trend_type,direction,change_percentage,start_month,end_month,start_amount,end_amount,category,total_spent
+overall_spending,decreasing,-79.59,2016-01,2018-10,49294.71,10060.0,,
+top_category,,,,,,,Expense (other),231226.0
+top_category,,,,,,,Expense (retail),109008.0
+top_category,,,,,,,Expense (utilities),58501.31

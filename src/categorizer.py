@@ -1,19 +1,24 @@
-from typing import Optional
 import logging
-from pathlib import Path
 import sys
-import pandas as pd
-import mlflow
+from pathlib import Path
 
-from utils import setup_mlflow, get_llm_config, ensure_no_active_run, sanitize_metric_name
+import mlflow
+import pandas as pd
+
+from utils import (
+    ensure_no_active_run,
+    get_llm_config,
+    sanitize_metric_name,
+    setup_mlflow,
+)
 
 # Add project root to sys.path for module imports
 project_root = Path(__file__).parent.parent
 from llm_setup.ollama_manager import query_llm, setup_ollama
-from llm_setup.config import LLMConfig
+
 sys.path.insert(0, str(project_root))
 
-def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.DataFrame]:
+def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame | None:
     """Categorize transactions using rules, with LLM as fallback."""
     setup_mlflow()
     llm_config = get_llm_config()
@@ -31,7 +36,7 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
             df = pd.read_csv(timeline_csv)
             logging.info(f"Loaded CSV with {len(df)} rows")
         except FileNotFoundError:
-            logging.error("Input CSV not found: %s", timeline_csv)
+            logging.exception("Input CSV not found: %s", timeline_csv)
             mlflow.log_param("error", "Input CSV not found")
             return None
 
@@ -45,9 +50,9 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
             "Expense (utilities)",
             "Expense (retail)",
             "Expense (loan)",
-            "Expense (other)"
+            "Expense (other)",
         ]
-        category_counts = {cat: 0 for cat in valid_categories}
+        category_counts = dict.fromkeys(valid_categories, 0)
 
         # Rule-based categorization
         def apply_rules(row: pd.Series) -> str:
@@ -60,26 +65,26 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
             if deposit > 0:
                 if any(kw in narration for kw in [
                     "SALARY", "CREDIT", "REFUND", "INTEREST", "CASH DEP",
-                    "NEFTCR", "FT-CR", "IMPS", "RTGS CR", "UPI"
+                    "NEFTCR", "FT-CR", "IMPS", "RTGS CR", "UPI",
                 ]):
                     return "Income"
 
             # Expense rules
             if withdrawal > 0:
                 if any(kw in narration for kw in [
-                    "POS", "PURCHASE", "DEBIT", "PAYTM", "PAYU", "RELIANCE", "NWD"
+                    "POS", "PURCHASE", "DEBIT", "PAYTM", "PAYU", "RELIANCE", "NWD",
                 ]):
                     return "Expense (retail)"
                 if any(kw in narration for kw in [
-                    "BILLPAY", "ELECTRICITY", "WATER", "GAS", "AIRTEL", "CITRUSAIRTEL"
+                    "BILLPAY", "ELECTRICITY", "WATER", "GAS", "AIRTEL", "CITRUSAIRTEL",
                 ]):
                     return "Expense (utilities)"
                 if any(kw in narration for kw in [
-                    "LOAN", "EMI", "MORTGAGE", "CREDIT CARD", "FUNDTRANSFERTO"
+                    "LOAN", "EMI", "MORTGAGE", "CREDIT CARD", "FUNDTRANSFERTO",
                 ]):
                     return "Expense (loan)"
                 if any(kw in narration for kw in [
-                    "ATM", "ATW", "CASH", "CHQ PAID", "CHEQUE", "NEFT", "IMPS", "UPI", "RTGS DR"
+                    "ATM", "ATW", "CASH", "CHQ PAID", "CHEQUE", "NEFT", "IMPS", "UPI", "RTGS DR",
                 ]):
                     return "Expense (other)"
 
@@ -126,7 +131,7 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
                         logging.warning("Invalid LLM category '%s' for index %d, using fallback", category, idx)
                         df.at[idx, "category"] = "Expense (other)"
                 except Exception as e:
-                    logging.error("LLM failed for index %d: %s", idx, str(e))
+                    logging.exception("LLM failed for index %d: %s", idx, str(e))
                     df.at[idx, "category"] = "Expense (other)"
         else:
             df.loc[df["category"] == "", "category"] = "Expense (other)"
@@ -141,7 +146,7 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
                 sanitized_metric = sanitize_metric_name(f"category_{category}")
                 mlflow.log_metric(sanitized_metric, count)
             except Exception as e:
-                logging.error("Failed to log metric for '%s': %s", category, str(e))
+                logging.exception("Failed to log metric for '%s': %s", category, str(e))
 
         try:
             df.to_csv(output_csv, index=False)
@@ -150,7 +155,7 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.D
             mlflow.log_metric("rule_processing_time_s", rule_time)
             logging.info("Categorized %d transactions", len(df))
         except Exception as e:
-            logging.error("Error saving output: %s", str(e))
+            logging.exception("Error saving output: %s", str(e))
 
         return df
 

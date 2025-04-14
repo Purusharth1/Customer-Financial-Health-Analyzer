@@ -1,0 +1,5 @@
+analysis_type,mean_monthly_income,std_deviation,coefficient_of_variation,stability_rating,months_analyzed,category,likely_type,typical_day,median_amount,consistency,frequency,total_income,primary_source,primary_source_pct,number_of_sources,diversity_rating,direction,avg_monthly_change_pct,start_month,end_month,start_amount,end_amount
+income_stability,58256.67,20528.11,35.24,Low,15.0,,,,,,,,,,,,,,,,,
+recurring_income,,,,,,Expense (loan),recurring_small_income,10.0,1.0,Medium,Variable,,,,,,,,,,,
+income_diversity,,,,,,,,,,,,873850.07,Income,59.36,3.0,High (diverse income sources),,,,,,
+income_trend,,,,,,,,,,,,,,,,,increasing,14.28,2016-01,2018-10,49218.9,40057.0

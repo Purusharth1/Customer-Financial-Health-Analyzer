@@ -1,4 +1,4 @@
-from .ollama_manager import setup_ollama, query_llm
 from .config import LLMConfig
+from .ollama_manager import query_llm, setup_ollama
 
-__all__ = ["setup_ollama", "query_llm", "LLMConfig"]
+__all__ = ["LLMConfig", "query_llm", "setup_ollama"]

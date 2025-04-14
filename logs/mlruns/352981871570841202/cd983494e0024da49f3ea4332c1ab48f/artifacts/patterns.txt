@@ -1,0 +1,5 @@
+**Insights:**
+
+- Expenses on weekends were significantly higher than other days of the week.
+- Expenses on the "Expense (retail)" category were the highest total amount spent.
+- Income is the only variable with a value of zero, indicating that no spending occurred.

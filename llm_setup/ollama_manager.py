@@ -1,9 +1,9 @@
 import logging
 import subprocess
-from typing import Optional
 
 import mlflow
 import ollama
+
 from llm_setup.config import LLMConfig
 
 
@@ -22,10 +22,10 @@ def setup_ollama(config: LLMConfig) -> bool:
             subprocess.run(["ollama", "serve"], check=False, capture_output=True, text=True)
             logging.info("Started Ollama service")
         except FileNotFoundError:
-            logging.error("Ollama not installed. Please install from https://ollama.ai")
+            logging.exception("Ollama not installed. Please install from https://ollama.ai")
             return False
         except subprocess.CalledProcessError as e:
-            logging.error("Failed to start Ollama service: %s", e.stderr)
+            logging.exception("Failed to start Ollama service: %s", e.stderr)
             return False
 
     # Check and pull model
@@ -40,24 +40,24 @@ def setup_ollama(config: LLMConfig) -> bool:
         else:
             logging.info("Model %s already available", config.model_name)
     except subprocess.CalledProcessError as e:
-        logging.error("Failed to pull model %s: %s", config.model_name, e.stderr)
+        logging.exception("Failed to pull model %s: %s", config.model_name, e.stderr)
         return False
     except Exception as e:
-        logging.error("Error checking models: %s", e)
+        logging.exception("Error checking models: %s", e)
         return False
 
     return True
 
 
-def query_llm(prompt: str, config: LLMConfig) -> Optional[str]:
+def query_llm(prompt: str, config: LLMConfig) -> str | None:
     """Query the LLM with a given prompt."""
     try:
         response = ollama.chat(
             model=config.model_name,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
         return response["message"]["content"].strip()
     except Exception as e:
-        logging.error("LLM query failed: %s", e)
+        logging.exception("LLM query failed: %s", e)
         mlflow.log_param("llm_error", str(e))
         return None

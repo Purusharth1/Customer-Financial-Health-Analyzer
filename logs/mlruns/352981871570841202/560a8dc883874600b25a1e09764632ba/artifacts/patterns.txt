@@ -1,0 +1,7 @@
+- High spending on weekends: Saturday and Sunday had the highest transaction amounts at 42500.0 and 10150.0 respectively.
+
+
+- Seasonality: The highest income and withdrawal amounts were recorded in June (11445.0 and 49294.71 respectively) and the lowest in December (100551.98 and 52941.14 respectively).
+
+
+- Dominant categories: 'Expense (loan)' and 'Withdrawal (INR)' accounted for the majority of the total expenses and withdrawals respectively.

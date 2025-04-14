@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/352981871570841202/e39f3b970e4b4f1a9c8847fca96db80c/artifacts
+end_time: 1744598995600
+entry_point_name: ''
+experiment_id: '352981871570841202'
+lifecycle_stage: active
+run_id: e39f3b970e4b4f1a9c8847fca96db80c
+run_name: intrigued-pug-15
+run_uuid: e39f3b970e4b4f1a9c8847fca96db80c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744598995586
+status: 3
+tags: []
+user_id: aditya
