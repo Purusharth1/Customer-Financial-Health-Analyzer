@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import mlflow
 import pandas as pd
 
-from utils import setup_mlflow
+from src.utils import setup_mlflow
 
 logging.basicConfig(level=logging.INFO)
 

@@ -14,7 +14,7 @@ from pathlib import Path
 import mlflow
 import pandas as pd
 
-from utils import get_llm_config, setup_mlflow
+from src.utils import get_llm_config, setup_mlflow
 
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.ollama_manager import query_llm

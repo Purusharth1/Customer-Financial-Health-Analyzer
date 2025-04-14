@@ -1,3 +1,0 @@
-- High spending on weekends: Saturday: 42500.0, Sunday: 10150.0
-- Seasonal trends: Income (INR): 518699.9 (July), 10060.0 (October)
-- Dominant categories: Withdrawal (INR): 57520.0, Deposit (INR): 78246.26

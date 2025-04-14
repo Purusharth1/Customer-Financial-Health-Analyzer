@@ -11,13 +11,13 @@ import logging
 
 from prefect import flow, task
 
-from analyzer import analyze_transactions
-from categorizer import categorize_transactions
-from nlp_processor import process_nlp_queries
-from pdf_parser import process_pdf_statements
-from storyteller import generate_stories
-from timeline import build_timeline
-from visualizer import generate_visualizations
+from src.analyzer import analyze_transactions
+from src.categorizer import categorize_transactions
+from src.nlp_processor import process_nlp_queries
+from src.pdf_parser import process_pdf_statements
+from src.storyteller import generate_stories
+from src.timeline import build_timeline
+from src.visualizer import generate_visualizations
 
 logging.basicConfig(level=logging.INFO)
 

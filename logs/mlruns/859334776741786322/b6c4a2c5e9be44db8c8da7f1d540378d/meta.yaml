@@ -1,0 +1,15 @@
+artifact_uri: file:///home/vaibhav/Documents/MLops/Customer-Financial-Health-Analyzer/logs/mlruns/859334776741786322/b6c4a2c5e9be44db8c8da7f1d540378d/artifacts
+end_time: 1744657948131
+entry_point_name: ''
+experiment_id: '859334776741786322'
+lifecycle_stage: active
+run_id: b6c4a2c5e9be44db8c8da7f1d540378d
+run_name: Timeline_Construction
+run_uuid: b6c4a2c5e9be44db8c8da7f1d540378d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744657948112
+status: 3
+tags: []
+user_id: vaibhav

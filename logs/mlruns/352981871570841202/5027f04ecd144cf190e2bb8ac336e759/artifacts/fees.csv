@@ -1,8 +1,0 @@
-parsed_date,Narration,amount,type,fee_type,category
-2016-04-01,CREDITINTERESTCAPITALISED,79.0,deposit,interest,Income
-2016-07-01,CREDITINTERESTCAPITALISED,76.0,deposit,interest,Income
-2016-09-09,50100027640512 -TPT-LOANPROCESSINGFEE,1.0,deposit,other,Expense (loan)
-2016-10-01,CREDITINTERESTCAPITALISED,44.0,deposit,interest,Income
-2018-07-01,CREDITINTERESTCAPITALISED,156.0,deposit,interest,Income
-2018-08-21,051030821081813264-CBDTTAX,1140.0,deposit,tax,Expense (retail)
-2018-09-30,CREDITINTERESTCAPITALISED,60.0,deposit,interest,Income

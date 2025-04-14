@@ -11,7 +11,7 @@ import mlflow
 import pandas as pd
 from dateutil.parser import parse
 
-from utils import setup_mlflow
+from src.utils import setup_mlflow
 
 
 def build_timeline(transactions_csv: str, output_csv: str) -> pd.DataFrame | None:
