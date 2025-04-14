@@ -1,3 +1,14 @@
+"""Natural Language Processing for Search and Conversational Queries.
+
+This module handles NLP tasks such as search, financial memory management,
+and conversational queries.
+Key functionalities include:
+- Enabling users to search for specific transactions or categories.
+- Maintaining a financial memory for contextual follow-up queries.
+- Supporting conversational interactions with the system.
+- Integrating with external NLP libraries or APIs for advanced processing.
+"""
+
 import logging
 import sys
 from pathlib import Path
@@ -14,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 
 def process_nlp_queries(input_csv: str, query: str, output_file: str) -> str | None:
     """Process NLP queries (search, memory, conversational).
-    
+
     Args:
         input_csv: Path to categorized transactions CSV.
         query: User query (e.g., "Restaurant spending last month").

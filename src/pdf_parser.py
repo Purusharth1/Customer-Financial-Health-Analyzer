@@ -1,3 +1,13 @@
+"""PDF Parsing and Data Extraction Logic.
+
+This module contains functions to parse bank statement PDFs and extract raw transaction data.
+Key functionalities include:
+- Reading and processing ICICI Bank PDF statements.
+- Extracting structured data such as dates, amounts, and descriptions.
+- Handling multi-page PDFs and unstructured text.
+- Cleaning and formatting extracted data for further processing.
+"""
+
 import glob
 import json
 import os

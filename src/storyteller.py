@@ -1,3 +1,12 @@
+"""Financial Summaries and Narrative Generation.
+
+This module generates concise summaries and narratives based on analyzed financial data.
+Key functionalities include:
+- Creating textual summaries of spending habits and trends.
+- Highlighting key insights and actionable recommendations.
+- Formatting narratives for user-friendly presentation.
+- Supporting integration with conversational interfaces.
+"""
 import logging
 import sys
 from pathlib import Path

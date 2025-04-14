@@ -1,3 +1,12 @@
+"""Visualization of Financial Data.
+
+This module generates visualizations such as pie charts, bar charts, and line charts to represent
+financial data. Key functionalities include:
+- Creating pie charts for category-wise spending distribution.
+- Plotting bar charts for monthly or weekly spending trends.
+- Generating line charts to visualize spending over time.
+- Saving or exporting visualizations for reports.
+"""
 import logging
 from pathlib import Path
 

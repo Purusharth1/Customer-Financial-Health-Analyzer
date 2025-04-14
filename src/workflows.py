@@ -1,3 +1,12 @@
+"""Prefect Workflows for Orchestration.
+
+This module defines Prefect workflows to orchestrate the end-to-end financial analysis pipeline.
+Key functionalities include:
+- Coordinating tasks such as PDF parsing, categorization, and analysis.
+- Managing dependencies between different modules.
+- Scheduling and automating workflows for batch processing.
+- Monitoring and logging workflow execution.
+"""
 import logging
 
 from prefect import flow, task

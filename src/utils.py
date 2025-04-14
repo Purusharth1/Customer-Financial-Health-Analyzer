@@ -1,3 +1,11 @@
+"""Shared Utilities for Logging and Helper Functions.
+
+This module provides reusable utility functions and logging configurations for the application.
+Key functionalities include:
+- Configuring and managing custom loggers for debugging and monitoring.
+- Providing helper functions for common operations (e.g., date formatting, data cleaning).
+- Ensuring consistency across the codebase with shared utilities.
+"""
 import logging
 import os
 import sys

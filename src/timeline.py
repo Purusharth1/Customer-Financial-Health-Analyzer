@@ -1,4 +1,12 @@
+"""Date Recognition and Timeline Construction.
 
+This module is responsible for identifying and organizing transactions into a chronological timeline.
+Key functionalities include:
+- Parsing and standardizing date formats from extracted data.
+- Sorting transactions by date to create a coherent timeline.
+- Detecting and resolving inconsistencies in date sequences.
+- Generating time-based metadata (e.g., month, weekday) for analysis.
+"""
 import mlflow
 import pandas as pd
 from dateutil.parser import parse
