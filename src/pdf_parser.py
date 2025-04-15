@@ -1,266 +1,343 @@
 """PDF Parsing and Data Extraction Logic.
 
-This module contains functions to parse bank statement PDFs and extract raw transaction data.
+This module contains functions to parse bank statement PDFs and extract raw
+transaction data.
 Key functionalities include:
-- Reading and processing ICICI Bank PDF statements.
+- Reading and processing HDFC Bank PDF statements.
 - Extracting structured data such as dates, amounts, and descriptions.
 - Handling multi-page PDFs and unstructured text.
 - Cleaning and formatting extracted data for further processing.
 """
-
-import glob
 import json
-import os
 import re
+from pathlib import Path
 
 import pandas as pd
 import pdfplumber
+import PyPDF2
+from tabula import read_pdf
 
 
-def parse_hdfc_statement(pdf_path):
-    """Parse HDFC bank statement PDF and return transaction data as a DataFrame"""
-    transactions = []
-
-    # Open the PDF
-    with pdfplumber.open(pdf_path) as pdf:
-        # Process each page
-        for page in pdf.pages:
-            text = page.extract_text()
-
-            # Skip the header and footer pages
-            if "Date Narration Chq./Ref.No. Value Dt" not in text:
-                continue
-
-            # Split the text into lines
-            lines = text.split("\n")
-
-            # Find the lines containing transaction data
-            for line in lines:
-                # Look for date pattern at the beginning (DD/MM/YY)
-                date_match = re.match(r"(\d{2}/\d{2}/\d{2})\s+(.*)", line)
-
-                if date_match:
-                    date = date_match.group(1)
-                    rest_of_line = date_match.group(2)
-
-                    # Handle different line formats - some lines might continue from previous transaction
-                    if re.search(r"\d{2}/\d{2}/\d{2}\s+", rest_of_line):
-                        # This line contains another transaction, skip for now
-                        continue
-
-                    # Pattern to extract transaction details
-                    # Looking for reference number, value date, withdrawal, deposit, and closing balance
-                    pattern = r"(.*?)\s+(\d+|[A-Z0-9]+)\s+(\d{2}/\d{2}/\d{2})(?:\s+([0-9,.]+))?(?:\s+([0-9,.]+))?\s+([0-9,.]+)$"
-                    match = re.search(pattern, line)
-
-                    if match:
-                        narration = match.group(1).strip()
-                        ref_no = match.group(2)
-                        value_date = match.group(3)
-                        withdrawal = match.group(4) if match.group(4) else ""
-                        deposit = match.group(5) if match.group(5) else ""
-                        closing_balance = match.group(6)
-
-                        # Clean up numeric values
-                        withdrawal = (
-                            withdrawal.replace(",", "") if withdrawal else "0.00"
-                        )
-                        deposit = deposit.replace(",", "") if deposit else "0.00"
-                        closing_balance = (
-                            closing_balance.replace(",", "")
-                            if closing_balance
-                            else "0.00"
-                        )
-
-                        transactions.append(
-                            {
-                                "Date": date,
-                                "Narration": narration,
-                                "Reference Number": ref_no,
-                                "Value Date": value_date,
-                                "Withdrawal (INR)": float(withdrawal),
-                                "Deposit (INR)": float(deposit),
-                                "Closing Balance (INR)": float(closing_balance),
-                            },
-                        )
-                    elif transactions:
-                        transactions[-1]["Narration"] += " " + line.strip()
-
-    # Create DataFrame from transactions
-    df = pd.DataFrame(transactions)
-    return df
+def identify_column_name(col: str) -> str:
+    """Identify column name based on common patterns."""
+    col_lower = str(col).lower()
+    mappings = {
+        "date": ["date", "dt"],
+        "narration": ["narration", "particulars", "description"],
+        "reference number": ["ref", "chq", "reference"],
+        "value date": ["value", "val dt", "val"],
+        "withdrawal (inr)": ["debit", "withdrawal", "dr", "with"],
+        "deposit (inr)": ["credit", "deposit", "cr", "dep"],
+        "closing balance (inr)": ["balance", "bal"],
+    }
+    for key, terms in mappings.items():
+        if any(term in col_lower for term in terms):
+            return key
+    return str(col)
 
 
-def enhanced_parse_hdfc_statement(pdf_path):
-    """Enhanced parsing for HDFC bank statements with improved pattern matching"""
-    all_transactions = []
-
-    with pdfplumber.open(pdf_path) as pdf:
-        for page_num, page in enumerate(pdf.pages):
-            text = page.extract_text()
-            lines = text.split("\n")
-
-            # Skip header and footer pages
-            if not any(
-                line.startswith(
-                    (
-                        "Date Narration",
-                        "01/",
-                        "02/",
-                        "03/",
-                        "04/",
-                        "05/",
-                        "06/",
-                        "07/",
-                        "08/",
-                        "09/",
-                        "10/",
-                        "11/",
-                        "12/",
-                    ),
+def process_transaction_row(row: pd.Series, table_columns: list[str]) -> dict:
+    """Process a single row of the table to extract transaction data."""
+    transaction = {}
+    for col in table_columns:
+        value = row[col]
+        if (
+            col in ["Date", "Value Date"] and pd.notna(value)
+        ) or (
+            col in ["Narration", "Reference Number"] and pd.notna(value)
+        ):
+            transaction[col] = str(value).strip()
+        elif (
+            col in ["Withdrawal (INR)", "Deposit (INR)", "Closing Balance (INR)"]
+            and pd.notna(value)
+        ):
+            # Handle cases with 'Dr' or 'Cr' suffixes
+            if isinstance(value, str):
+                value = (
+                    value.replace(",", "")
+                    .replace("Dr", "")
+                    .replace("Cr", "")
+                    .strip()
                 )
-                for line in lines
-            ):
-                continue
-
-            # Find transaction lines
-            for i, line in enumerate(lines):
-                # Check if line starts with a date (DD/MM/YY)
-                if re.match(r"^(\d{2}/\d{2}/\d{2})", line):
-                    # Extract transaction components
-                    parts = line.split()
-
-                    # Need at least date, value_date, and closing_balance
-                    if len(parts) < 4:
-                        continue
-
-                    date = parts[0]
-
-                    # Find value date (which is also in date format)
-                    value_date_idx = -1
-                    for j, part in enumerate(parts[1:], 1):
-                        if re.match(r"^\d{2}/\d{2}/\d{2}$", part):
-                            value_date_idx = j
-                            break
-
-                    if value_date_idx == -1:
-                        continue
-
-                    value_date = parts[value_date_idx]
-
-                    # Reference number is typically right before value date
-                    ref_no = parts[value_date_idx - 1] if value_date_idx > 1 else ""
-
-                    # Narration is between date and ref_no
-                    narration = (
-                        " ".join(parts[1 : value_date_idx - 1])
-                        if value_date_idx > 2
-                        else ""
-                    )
-
-                    # Find numeric values after value date
-                    numeric_parts = []
-                    for part in parts[value_date_idx + 1 :]:
-                        if re.match(r"^[\d,.]+$", part):
-                            numeric_parts.append(part.replace(",", ""))
-
-                    # The last numeric value is the closing balance
-                    if len(numeric_parts) >= 1:
-                        closing_balance = numeric_parts[-1]
-
-                        # If there are additional numeric values, they are withdrawal and deposit
-                        withdrawal = "0.00"
-                        deposit = "0.00"
-
-                        if len(numeric_parts) == 3:
-                            withdrawal = numeric_parts[0]
-                            deposit = numeric_parts[1]
-                        elif len(numeric_parts) == 2:
-                            # Determine if it's a withdrawal or deposit
-                            if float(numeric_parts[0]) > float(numeric_parts[1]):
-                                withdrawal = numeric_parts[0]
-                            else:
-                                deposit = numeric_parts[0]
-
-                        transaction = {
-                            "Date": date,
-                            "Narration": narration,
-                            "Reference Number": ref_no,
-                            "Value Date": value_date,
-                            "Withdrawal (INR)": float(withdrawal),
-                            "Deposit (INR)": float(deposit),
-                            "Closing Balance (INR)": float(closing_balance),
-                        }
-
-                        all_transactions.append(transaction)
-
-    return pd.DataFrame(all_transactions)
+            try:
+                transaction[col] = float(value) if value and value != "" else 0.0
+            except (ValueError, TypeError):
+                transaction[col] = 0.0
+    return transaction
 
 
-def extract_transactions_regex(pdf_path):
-    """Extract transactions using regex patterns designed specifically for HDFC format"""
+def validate_and_clean_transaction(transaction: dict) -> bool:
+    """Validate and clean a transaction.
+
+    Returns True if the transaction is valid, False otherwise.
+    """
+    if not (
+        "Date" in transaction
+        and transaction["Date"]
+        and re.match(r"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}", transaction["Date"])
+    ):
+        return False
+
+    required_fields = [
+        "Narration",
+        "Reference Number",
+        "Value Date",
+        "Withdrawal (INR)",
+        "Deposit (INR)",
+        "Closing Balance (INR)",
+    ]
+    for field in required_fields:
+        if field not in transaction:
+            transaction[field] = 0.0 if field.endswith("(INR)") else ""
+
+    # Ensure no transaction has both withdrawal and deposit
+    if transaction["Withdrawal (INR)"] > 0 and transaction["Deposit (INR)"] > 0:
+        if transaction["Withdrawal (INR)"] > transaction["Deposit (INR)"]:
+            transaction["Deposit (INR)"] = 0.0
+        else:
+            transaction["Withdrawal (INR)"] = 0.0
+
+    return True
+
+
+def extract_transactions_tabula(pdf_path: str) -> pd.DataFrame:
+    """Extract transactions using tabula-py for handling tabular PDF data."""
+    try:
+        # Read all tables from the PDF with stricter settings
+        tables = read_pdf(
+            pdf_path,
+            pages="all",
+            multiple_tables=True,
+            guess=True,
+            lattice=True,
+            stream=True,
+        )
+
+        if not tables:
+            return pd.DataFrame()
+
+        transactions: list[dict] = []
+        min_columns = 5  # Minimum number of columns expected in a table
+
+        for table in tables:
+            if len(table.columns) >= min_columns:
+                # Identify column names
+                column_names = [identify_column_name(col) for col in table.columns]
+
+                # Rename and process the table if expected columns are present
+                if (
+                    "Date" in column_names
+                    and ("Withdrawal (INR)" in column_names
+                         or "Deposit (INR)" in column_names)
+                ):
+                    table.columns = column_names
+
+                    # Process each row in the table
+                    for _, row in table.iterrows():
+                        transaction = process_transaction_row(row, table.columns)
+                        if validate_and_clean_transaction(transaction):
+                            transactions.append(transaction)
+
+        return pd.DataFrame(transactions)
+    except ValueError:
+        return pd.DataFrame()
+
+
+
+
+def extract_text_better(pdf_path: str | Path) -> str:
+    """Extract text from PDF using both PyPDF2 and pdfplumber for better results."""
+    full_text = ""
+
+    # Try with PyPDF2 first
+    try:
+        with Path(pdf_path).open("rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            for page_num in range(len(reader.pages)):
+                page = reader.pages[page_num]
+                full_text += page.extract_text() + "\n\n"
+    except (OSError, ValueError, TypeError):
+        pass  # Handle specific exceptions silently
+
+    # Then try with pdfplumber
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                full_text += page.extract_text() + "\n\n"
+    except (OSError, ValueError, TypeError):
+        pass  # Handle specific exceptions silently
+
+    return full_text
+
+
+MIN_AMOUNTS_FOR_WITHDRAWAL_DEPOSIT: int = 3
+TWO_AMOUNTS: int = 2
+
+
+def extract_date_and_rest(line: str) -> tuple[str | None, str]:
+    """Extract date and remaining text from a line."""
+    date_match = re.match(r"^(\d{2}/\d{2}/\d{2})", line)
+    if date_match:
+        date = date_match.group(1)
+        rest_of_line = line[len(date):].strip()
+        return date, rest_of_line
+    return None, line
+
+
+def extract_value_date_and_ref_no(rest_of_line: str, date: str) -> tuple[str, str]:
+    """Extract value date and reference number from the rest of the line."""
+    value_date_pattern = r"(\d{2}/\d{2}/\d{2})"
+    value_dates = re.findall(value_date_pattern, rest_of_line)
+    value_date = value_dates[0] if value_dates else date
+
+    ref_no = ""
+    ref_pattern = r"([A-Z0-9]{6,})"
+    value_date_pos = rest_of_line.find(value_date)
+    if value_date_pos > 0:
+        ref_text = rest_of_line[:value_date_pos]
+        ref_matches = re.findall(ref_pattern, ref_text)
+        if ref_matches:
+            ref_no = ref_matches[-1]
+
+    return value_date, ref_no
+
+
+def extract_narration(rest_of_line: str, value_date: str, ref_no: str) -> str:
+    """Extract and clean narration from the rest of the line."""
+    narration = rest_of_line
+    if value_date:
+        narration = narration.replace(value_date, "").strip()
+    if ref_no:
+        narration = narration.replace(ref_no, "").strip()
+    return narration
+
+
+def extract_amounts(rest_of_line: str) -> tuple[list[str], list[str]]:
+    """Extract amounts and their Cr/Dr flags."""
+    amount_pattern = r"(\d{1,3}(?:,\d{3})*\.\d{2})\s*(Cr|Dr)?"
+    amount_matches = re.findall(amount_pattern, rest_of_line)
+    amounts = [amt[0] for amt in amount_matches]
+    cr_dr_flags = [amt[1] for amt in amount_matches]
+    return amounts, cr_dr_flags
+
+
+def determine_debit_credit(cr_dr_flags: list[str], narration: str) -> str:
+    """Determine transaction type based on flags and narration."""
+    if "Dr" in cr_dr_flags:
+        return "debit"
+    if "Cr" in cr_dr_flags:
+        return "credit"
+
+    lower_narration = narration.lower()
+    is_debit = any(
+        keyword in lower_narration
+        for keyword in [
+            "debit", "withdrawal", "purchase", "payment", "fee", "charge",
+            "outward", "paid", "dr", "by transfer", "bill payment", "emi",
+            "neft-out", "rtgs-out", "pos debit", "upi payment", "charges",
+            "service",
+        ]
+    )
+    is_credit = any(
+        keyword in lower_narration
+        for keyword in [
+            "credit", "deposit", "salary", "interest", "refund", "cashback",
+            "inward", "received", "cr", "to account", "return", "neft-in",
+            "rtgs-in", "imps-in", "upi credit", "reversal", "interest credited",
+            "gmitsa",
+        ]
+    )
+
+    if is_debit:
+        return "debit"
+    if is_credit:
+        return "credit"
+    return "unknown"
+
+
+def process_amounts(
+    amounts: list[str],
+    transaction_type: str,
+    transactions: list[dict],
+) -> tuple[float, float, float]:
+    """Process amounts to determine withdrawal, deposit, and closing balance."""
+    cleaned_amounts = [round(float(amt.replace(",", "")), 2) for amt in amounts]
+    withdrawal = 0.0
+    deposit = 0.0
+    closing_balance = round(cleaned_amounts[-1], 2) if cleaned_amounts else 0.0
+
+    if cleaned_amounts:
+        if len(cleaned_amounts) >= MIN_AMOUNTS_FOR_WITHDRAWAL_DEPOSIT:
+            withdrawal = (round(cleaned_amounts[-3], 2)
+                          if transaction_type == "debit" else 0.0)
+            deposit = (round(cleaned_amounts[-2], 2)
+                       if transaction_type == "credit" else 0.0)
+        elif len(cleaned_amounts) == TWO_AMOUNTS:
+            if transaction_type == "debit":
+                withdrawal = round(cleaned_amounts[0], 2)
+            elif transaction_type == "credit" or not transactions:
+                deposit = round(cleaned_amounts[0], 2)
+            else:
+                prev_balance = transactions[-1]["Closing Balance (INR)"]
+                if closing_balance > prev_balance:
+                    deposit = round(closing_balance - prev_balance, 2)
+                else:
+                    withdrawal = round(prev_balance - closing_balance, 2)
+
+    return withdrawal, deposit, closing_balance
+
+
+def clean_narration(narration: str, amounts: list[str]) -> str:
+    """Clean narration by removing amounts and extra spaces."""
+    for amt in amounts:
+        narration = narration.replace(amt, "").strip()
+    return re.sub(r"\s{2,}", " ", narration).strip()
+
+
+def parse_hdfc_statement_improved(pdf_path: str) -> pd.DataFrame:
+    """Parse HDFC bank statement with advanced text extraction and pattern matching."""
+    full_text = extract_text_better(pdf_path)
     transactions = []
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
+    sections = re.split(r"\n{3,}", full_text)
 
-            # Find transaction lines with regex
-            # Pattern: date, narration, ref_no, value_date, withdrawal?, deposit?, closing_balance
-            pattern = r"(\d{2}/\d{2}/\d{2})\s+(.*?)\s+(\w+)\s+(\d{2}/\d{2}/\d{2})\s+(?:([0-9,.]+)\s+)?(?:([0-9,.]+)\s+)?([0-9,.]+)"
+    for section in sections:
+        lines = section.split("\n")
 
-            for match in re.finditer(pattern, text):
-                date = match.group(1)
-                narration = match.group(2).strip()
-                ref_no = match.group(3)
-                value_date = match.group(4)
+        for _i, line in enumerate(lines):
+            date, rest_of_line = extract_date_and_rest(line)
+            if date:
+                value_date, ref_no = extract_value_date_and_ref_no(rest_of_line, date)
+                narration = extract_narration(rest_of_line, value_date, ref_no)
+                amounts, cr_dr_flags = extract_amounts(rest_of_line)
+                transaction_type = determine_debit_credit(cr_dr_flags, narration)
+                withdrawal, deposit, closing_balance = process_amounts(
+                    amounts, transaction_type, transactions,
+                )
+                narration = clean_narration(narration, amounts)
 
-                # Group 5 and 6 could be withdrawal or deposit
-                amount1 = match.group(5)
-                amount2 = match.group(6)
-                closing_balance = match.group(7)
-
-                # Determine which amount is withdrawal and which is deposit
-                withdrawal = "0.00"
-                deposit = "0.00"
-
-                if amount1 and amount2:
-                    withdrawal = amount1
-                    deposit = amount2
-                elif amount1 and not amount2:
-                    # If only one amount exists, determine if it's withdrawal or deposit
-                    # by checking if the balance decreases
-                    if transactions:
-                        last_balance = float(transactions[-1]["Closing Balance (INR)"])
-                        current_balance = float(closing_balance.replace(",", ""))
-
-                        if current_balance < last_balance:
-                            withdrawal = amount1
+                if date and (withdrawal > 0 or deposit > 0 or closing_balance > 0):
+                    if withdrawal and deposit:
+                        if withdrawal > deposit:
+                            deposit = 0.0
                         else:
-                            deposit = amount1
+                            withdrawal = 0.0
 
-                # Clean amounts
-                withdrawal = withdrawal.replace(",", "") if withdrawal else "0.00"
-                deposit = deposit.replace(",", "") if deposit else "0.00"
-                closing_balance = closing_balance.replace(",", "")
-
-                transactions.append(
-                    {
+                    transactions.append({
                         "Date": date,
                         "Narration": narration,
                         "Reference Number": ref_no,
                         "Value Date": value_date,
-                        "Withdrawal (INR)": float(withdrawal),
-                        "Deposit (INR)": float(deposit),
-                        "Closing Balance (INR)": float(closing_balance),
-                    },
-                )
+                        "Withdrawal (INR)": withdrawal,
+                        "Deposit (INR)": deposit,
+                        "Closing Balance (INR)": closing_balance,
+                    })
 
     return pd.DataFrame(transactions)
 
 
-def extract_customer_info(pdf_path):
-    """Extract customer information from the HDFC bank statement with improved patterns"""
+def extract_customer_info(pdf_path: str) -> dict[str, str]:
+    """Extract customer information from the HDFC bank statement."""
     customer_info = {
         "name": "",
         "email": "",
@@ -269,174 +346,208 @@ def extract_customer_info(pdf_path):
         "state": "",
     }
 
-    with pdfplumber.open(pdf_path) as pdf:
-        full_text = ""
-        # Check first few pages for customer info
-        for page_idx in range(min(3, len(pdf.pages))):
-            full_text += pdf.pages[page_idx].extract_text() + "\n"
+    full_text = extract_text_better(pdf_path)
 
-        # Extract account number - looking for patterns like "Account No : 50100158077633"
-        account_pattern = r"Account No\s*:\s*(\d+)"
-        account_match = re.search(account_pattern, full_text)
-        if account_match:
-            customer_info["account_number"] = account_match.group(1)
+    # Extract account number - looking for patterns like "Account No : 50100158077633"
+    account_pattern = r"Account No\s*:?\s*(\d{10,})"
+    account_match = re.search(account_pattern, full_text)
+    if account_match:
+        customer_info["account_number"] = account_match.group(1)
 
-        # Extract email - improved pattern that handles different email formats
-        email_pattern = r"Email\s*:\s*([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})"
-        email_match = re.search(email_pattern, full_text)
-        if email_match:
-            customer_info["email"] = email_match.group(1)
+    # Extract email
+    email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    email_match = re.search(email_pattern, full_text)
+    if email_match:
+        customer_info["email"] = email_match.group(0)
 
-        # Extract name - more robust pattern that finds the name on the statement
-        # Looking for patterns like "MR. ANUP DUBEY" at the beginning of a line
-        name_pattern = r"(?:^|\n)((?:MR|MRS|MS|DR)\.?\s+[A-Z][A-Z\s]+)"
-        name_match = re.search(name_pattern, full_text)
-        if name_match:
-            customer_info["name"] = name_match.group(1).strip()
+    # Extract name - looking for patterns like "MR. ANUP DUBEY"
+    name_pattern = r"(?:MR|MRS|MS|DR)\.?\s+([A-Z][A-Z\s]+)"
+    name_match = re.search(name_pattern, full_text)
+    if name_match:
+        customer_info["name"] = name_match.group(0).strip()
 
-        # Extract city and state - improved pattern that handles different formats
-        city_pattern = r"(?:City|CITY)\s*:\s*([A-Z]+)"
-        city_match = re.search(city_pattern, full_text)
-        if city_match:
-            customer_info["city"] = city_match.group(1)
+    # Extract city and state
+    city_pattern = r"(?:City|CITY)\s*:?\s*([A-Z]+)"
+    city_match = re.search(city_pattern, full_text)
+    if city_match:
+        customer_info["city"] = city_match.group(1)
 
-        state_pattern = r"(?:State|STATE)\s*:\s*([A-Z]+)"
-        state_match = re.search(state_pattern, full_text)
-        if state_match:
-            customer_info["state"] = state_match.group(1)
-
-        # If name wasn't found with the previous pattern, try another approach
-        if not customer_info["name"]:
-            # Look for customer name in address section
-            address_pattern = r"(?:A/C OPEN DATE|JOINT HOLDERS).*?\n(.*?)\n"
-            address_match = re.search(address_pattern, full_text)
-            if address_match:
-                customer_info["name"] = address_match.group(1).strip()
-
-    # Fallback: If email is found but name isn't, extract name from email
-    if not customer_info["name"] and customer_info["email"]:
-        email_name = customer_info["email"].split("@")[0]
-        if email_name:
-            # Convert email name like "anupdubey788" to "Anup Dubey"
-            name_parts = re.findall(r"[a-zA-Z]+", email_name)
-            formatted_name = " ".join(part.capitalize() for part in name_parts)
-            customer_info["name"] = formatted_name
-
-    # Clean up data
-    if customer_info["name"]:
-        # Remove any extra spaces, line breaks, etc.
-        customer_info["name"] = re.sub(r"\s+", " ", customer_info["name"]).strip()
+    state_pattern = r"(?:State|STATE)\s*:?\s*([A-Z]+)"
+    state_match = re.search(state_pattern, full_text)
+    if state_match:
+        customer_info["state"] = state_match.group(1)
 
     return customer_info
 
 
-def process_pdf_statements(folder_path, output_folder):
-    """Process 1 to 10 PDF statements for one person, saving only combined CSV and one JSON to output_folder"""
+
+
+
+MIN_TRANSACTIONS_THRESHOLD = 5
+
+
+def extract_pdf_files(folder_path: Path) -> list[Path]:
+    """Find all PDF files in the folder."""
+    return list(folder_path.rglob("*.[pP][dD][fF]"))
+
+
+def validate_and_limit_pdfs(pdf_files: list[Path]) -> list[Path]:
+    """Validate and limit the number of PDF files to 10."""
+    if not pdf_files:
+        return []
+    return pdf_files[:10]
+
+
+def process_single_pdf(
+    pdf_file: Path,
+    customer_info: dict,
+    idx: int,
+) -> tuple[pd.DataFrame, dict]:
+    """Process a single PDF file, extracting transactions and updating customer info."""
+    file_name = pdf_file.name
+
+    # Extract customer info from the first PDF only
+    if idx == 0:
+        customer_info = extract_customer_info(str(pdf_file))
+        customer_info["pdf_files"] = [file_name]
+    elif customer_info:
+        customer_info["pdf_files"].append(file_name)
+
+    # Try the tabula method first
+    transactions_df = extract_transactions_tabula(str(pdf_file))
+
+    # If tabula extraction is insufficient, try the improved text-based method
+    if len(transactions_df) < MIN_TRANSACTIONS_THRESHOLD:
+        transactions_df = parse_hdfc_statement_improved(str(pdf_file))
+
+    # Add source file but NOT account number to transactions
+    if len(transactions_df) > 0:
+        transactions_df["Source_File"] = file_name
+
+        # Validate data before adding
+        if (
+            "Withdrawal (INR)" in transactions_df.columns
+            and "Deposit (INR)" in transactions_df.columns
+        ):
+            for _, row in transactions_df.iterrows():
+                if row["Withdrawal (INR)"] > 0 and row["Deposit (INR)"] > 0:
+                    if row["Withdrawal (INR)"] > row["Deposit (INR)"]:
+                        transactions_df.loc[_, "Deposit (INR)"] = 0.0
+                    else:
+                        transactions_df.loc[_, "Withdrawal (INR)"] = 0.0
+
+    return transactions_df, customer_info
+
+
+def combine_transactions(all_transactions: list[pd.DataFrame]) -> pd.DataFrame:
+    """Combine all transaction DataFrames into one DataFrame with validation."""
+    combined_df = pd.concat(all_transactions, ignore_index=True)
+
+    # Final validation - ensure all numeric columns are of correct type
+    numeric_columns = ["Withdrawal (INR)", "Deposit (INR)", "Closing Balance (INR)"]
+    for col in numeric_columns:
+        if col in combined_df.columns:
+            combined_df[col] = (pd.to_numeric(combined_df[col],
+                                errors="coerce").fillna(0.0))
+
+    # Ensure we have all required columns
+    required_columns = [
+        "Date",
+        "Narration",
+        "Reference Number",
+        "Value Date",
+        "Withdrawal (INR)",
+        "Deposit (INR)",
+        "Closing Balance (INR)",
+        "Source_File",
+    ]
+    for col in required_columns:
+        if col not in combined_df.columns:
+            combined_df[col] = 0.0 if col in numeric_columns else ""
+
+    return combined_df
+
+
+def save_combined_outputs(
+    output_folder: Path,
+    combined_df: pd.DataFrame,
+    all_customer_info: list[dict],
+) -> None:
+    """Save the combined transactions CSV and customer info JSON."""
+    # Save combined transactions to CSV
+    combined_csv = output_folder / "all_transactions.csv"
+    combined_df.to_csv(combined_csv, index=False)
+
+    # Save customer info to JSON
+    combined_json = output_folder / "all_customers_info.json"
+    with combined_json.open("w") as f:
+        json.dump(all_customer_info, f, indent=4)
+
+
+def process_pdf_statements(
+    folder_path: str, output_folder: str,
+) -> tuple[list[dict], list[pd.DataFrame]]:
+    """Process 1 to 10 PDF statements for one person, saving combined CSV and JSON."""
     # Normalize folder paths
-    folder_path = os.path.normpath(folder_path)
-    output_folder = os.path.normpath(output_folder)
+    folder_path = Path(folder_path)
+    output_folder = Path(output_folder)
 
     # Ensure output folder exists
-    os.makedirs(output_folder, exist_ok=True)
+    output_folder.mkdir(parents=True, exist_ok=True)
 
-    # Debug: Print folder paths
-    print(f"Searching for PDFs in: {folder_path}")
-    print(f"Will save outputs to: {output_folder}")
-
-    # Find all PDF files (case-insensitive for .pdf or .PDF)
-    pdf_files = glob.glob(os.path.join(folder_path, "*.[pP][dD][fF]"))
-
-    # Debug: Print found files
-    print(f"Found {len(pdf_files)} PDF files: {pdf_files}")
-
+    # Extract PDF files
+    pdf_files = extract_pdf_files(folder_path)
+    pdf_files = validate_and_limit_pdfs(pdf_files)
     if not pdf_files:
-        print(
-            f"No PDF files found in {folder_path}. Please check the folder and file extensions.",
-        )
         return [], []
 
-    # Limit to 10 files
-    pdf_files = pdf_files[:10]
-    print(f"Processing {len(pdf_files)} PDF files (limited to 10).")
+    all_transactions: list[pd.DataFrame] = []
+    customer_info = {}
 
-    all_transactions = []
-    customer_info = None
-
+    # Process each PDF file
     for idx, pdf_file in enumerate(pdf_files):
-        file_name = os.path.basename(pdf_file)
-        print(f"\nProcessing: {file_name}")
+        (transactions_df,
+         customer_info) = process_single_pdf(pdf_file, customer_info, idx)
+        if len(transactions_df) > 0:
+            all_transactions.append(transactions_df)
 
-        # Extract customer info from first PDF only
-        if idx == 0:
-            customer_info = extract_customer_info(pdf_file)
-            customer_info["pdf_files"] = [file_name]
-        else:
-            customer_info["pdf_files"].append(file_name)
-
-        # Try parsing methods
-        df = enhanced_parse_hdfc_statement(pdf_file)
-
-        if len(df) == 0:
-            print("Enhanced method failed, trying regex method...")
-            df = extract_transactions_regex(pdf_file)
-
-        if len(df) == 0:
-            print("Regex method failed, trying basic method...")
-            df = parse_hdfc_statement(pdf_file)
-
-        if len(df) > 0:
-            df["Source_File"] = file_name
-            df["Account_Number"] = customer_info["account_number"]
-            all_transactions.append(df)
-            print(f"Successfully extracted {len(df)} transactions from {file_name}")
-        else:
-            print(f"Failed to extract transactions from {file_name}")
-
-    # Save combined transactions
-    all_customer_info = [customer_info] if customer_info else []
+    # Combine transactions and save outputs
     if all_transactions:
-        combined_df = pd.concat(all_transactions, ignore_index=True)
-        combined_csv = os.path.join(output_folder, "all_transactions.csv")
-        combined_df.to_csv(combined_csv, index=False)
-        print(
-            f"\nCombined {len(combined_df)} transactions from {len(all_transactions)} files into {combined_csv}",
-        )
+        combined_df = combine_transactions(all_transactions)
+        all_customer_info = [customer_info] if customer_info else []
+        save_combined_outputs(output_folder, combined_df, all_customer_info)
 
-    # Save customer info
-    if all_customer_info:
-        combined_json = os.path.join(output_folder, "all_customers_info.json")
-        with open(combined_json, "w") as f:
-            json.dump(all_customer_info, f, indent=4)
-        print(f"Saved information for 1 customer to {combined_json}")
+        return all_customer_info, all_transactions
 
-    return all_customer_info, all_transactions
+    return [], []
 
 
-def main():
-    """Main function to process PDF statements for one person"""
+
+
+
+
+
+def main() -> None:
+    """Process PDF statements for one person."""
     # Default folder paths (relative)
-    default_input_path = "../Customer-Financial-Health-Analyzer/data/input"
-    default_output_path = "../Customer-Financial-Health-Analyzer/data/output"
+    default_input_path = (
+        Path("../Customer-Financial-Health-Analyzer/data/input").resolve()
+    )
+    default_output_path = (
+        Path("../Customer-Financial-Health-Analyzer/data/output").resolve()
+    )
 
-    # Resolve to absolute paths
-    default_input_path = os.path.abspath(default_input_path)
-    default_output_path = os.path.abspath(default_output_path)
-
+    # Prompt user for input folder path
     folder_path = input(
-        f"Enter folder path containing 1-10 PDF statements for one person (default: {default_input_path}): ",
+        "Enter folder path containing 1-10 PDF statements for one person "
+        f"(default: {default_input_path}): ",
     ).strip()
 
     # Use default input path if empty
-    if not folder_path:
-        folder_path = default_input_path
-    else:
-        folder_path = os.path.abspath(folder_path)
+    folder_path = Path(folder_path or default_input_path).resolve()
 
     # Verify input folder
-    if not os.path.isdir(folder_path):
-        print(
-            f"Error: Input folder '{folder_path}' does not exist or is not a directory.",
-        )
+    if not folder_path.is_dir():
         return
 
     # Use default output path
@@ -444,44 +555,29 @@ def main():
 
     # Verify output folder
     try:
-        os.makedirs(output_folder, exist_ok=True)
-        test_file = os.path.join(output_folder, ".test_write")
-        with open(test_file, "w") as f:
+        output_folder.mkdir(parents=True, exist_ok=True)
+        test_file = output_folder / ".test_write"
+        with test_file.open("w") as f:
             f.write("")
-        os.remove(test_file)
-    except Exception as e:
-        print(f"Error: Cannot write to output folder '{output_folder}'. Reason: {e}")
+        test_file.unlink()
+    except OSError:
         return
 
     # Process PDFs
     customer_info_list, transaction_dfs = process_pdf_statements(
-        folder_path, output_folder,
+        str(folder_path), str(output_folder),
     )
 
-    # Print summary
-    if customer_info_list:
-        print("\nSummary of processed statements:")
-        customer_info = customer_info_list[0]
-        print("\nCustomer:")
-        print(f"Name: {customer_info['name']}")
-        print(f"Account Number: {customer_info['account_number']}")
-        print(f"Email: {customer_info['email']}")
-        print(f"City: {customer_info['city']}")
-        print(f"State: {customer_info['state']}")
-        print(f"PDF Files: {', '.join(customer_info['pdf_files'])}")
+    # Handle summary logic
+    if customer_info_list and transaction_dfs:
+        combined_df = pd.concat(transaction_dfs, ignore_index=True)
 
-        if transaction_dfs:
-            combined_df = pd.concat(transaction_dfs, ignore_index=True)
-            print(f"Total Transactions: {len(combined_df)}")
-            print(
-                f"Date Range: {combined_df['Date'].min()} to {combined_df['Date'].max()}",
-            )
-            print(f"Total Deposits: {combined_df['Deposit (INR)'].sum():.2f} INR")
-            print(f"Total Withdrawals: {combined_df['Withdrawal (INR)'].sum():.2f} INR")
-    else:
-        print(
-            "\nNo statements were processed. Please verify the folder contains 1-10 PDF files.",
-        )
+        deposits = combined_df["Deposit (INR)"].sum()
+        withdrawals = combined_df["Withdrawal (INR)"].sum()
+
+        # Check for potential issues
+        if deposits == 0 or withdrawals == 0:
+            pass  # Handle warnings here if needed
 
 
 if __name__ == "__main__":

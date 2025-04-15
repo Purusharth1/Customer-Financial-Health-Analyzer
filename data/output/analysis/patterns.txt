@@ -1,0 +1,10 @@
+**Pattern 1: High spending in specific categories**
+* **Category:** (Specify category with high spending)
+* **Amount:** (Specify amount spent)
+* **Timing:** (Specify start and end time of day or week)
+**Pattern 2: Monthly or weekly spending trends**
+* **Month:** (Specify month)
+* **Week number:** (Specify week number)
+* **Amount:** (Specify total amount spent)
+**Pattern 3: Beginning/middle/end of month spending habits**
+* **Start:** (Specify start and end time of month)

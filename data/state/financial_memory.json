@@ -1,0 +1,30 @@
+{
+  "recent_queries": [
+    {
+      "timestamp": "2025-04-15T23:49:06.581033",
+      "query": "How much did I spend on restaurants last month?",
+      "result": "No information available. Context does not provide details about the amount spent on restaurants last month."
+    },
+    {
+      "timestamp": "2025-04-15T23:52:00.375929",
+      "query": "How much did I spend on Expense (other) last month?",
+      "result": "The context does not provide details about the amount spent on restaurants last month, so I cannot answer this query from the context."
+    },
+    {
+      "timestamp": "2025-04-15T23:58:26.611130",
+      "query": "How much did I spend on restaurants last month?",
+      "result": "No information is available in the context to answer this query, so the answer is 'No information available'."
+    },
+    {
+      "timestamp": "2025-04-16T00:00:50.737413",
+      "query": "How much did I spend on Expenses (loan) last month?",
+      "result": "The context does not provide details about the amount spent on expenses (loans) last month, so I cannot answer this query from the context."
+    },
+    {
+      "timestamp": "2025-04-16T00:08:34.705009",
+      "query": "How much did I spend on Expenses (loan) last month?",
+      "result": "No information available. The context does not provide details about the amount spent on expenses (loans) last month."
+    }
+  ],
+  "context": {}
+}

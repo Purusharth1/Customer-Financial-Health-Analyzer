@@ -8,16 +8,16 @@ Key functionalities include:
 - Monitoring and logging workflow execution.
 """
 import logging
-
+from typing import Optional
 from prefect import flow, task
 
-from src.analyzer import analyze_transactions
-from src.categorizer import categorize_transactions
-from src.nlp_processor import process_nlp_queries
-from src.pdf_parser import process_pdf_statements
-from src.storyteller import generate_stories
-from src.timeline import build_timeline
-from src.visualizer import generate_visualizations
+from analyzer import analyze_transactions
+from categorizer import categorize_transactions
+from nlp_processor import process_nlp_queries
+from pdf_parser import process_pdf_statements
+from storyteller import generate_stories
+from timeline import build_timeline
+from visualizer import generate_visualizations
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,9 +52,14 @@ def generate_stories_task(input_csv: str, output_file: str) -> list:
     return generate_stories(input_csv, output_file)
 
 @task
-def process_nlp_queries_task(input_csv: str, query: str, output_file: str) -> str:
+def process_nlp_queries_task(
+    input_csv: str,
+    query: str,
+    output_file: str,
+    visualization_file: Optional[str] = None
+) -> str:
     """Process NLP query."""
-    return process_nlp_queries(input_csv, query, output_file)
+    return process_nlp_queries(input_csv, query, output_file, visualization_file)
 
 @flow(name="Financial_Analysis_Pipeline")
 def financial_analysis_pipeline(input_dir: str = "data/input/", query: str = "Restaurant spending last month") -> dict:
@@ -78,6 +83,7 @@ def financial_analysis_pipeline(input_dir: str = "data/input/", query: str = "Re
     charts_dir = "data/output/charts"
     stories_file = "data/output/stories.txt"
     nlp_file = "data/output/nlp_response.txt"
+    visualization_file = "data/output/visualization_data.json"
 
     # Run tasks
     parse_pdfs_task(input_dir, "data/output/")
@@ -86,7 +92,12 @@ def financial_analysis_pipeline(input_dir: str = "data/input/", query: str = "Re
     analysis = analyze_transactions_task(categorized_csv, analysis_dir)
     visualizations = generate_visualizations_task(categorized_csv, charts_dir)
     stories = generate_stories_task(categorized_csv, stories_file)
-    nlp_response = process_nlp_queries_task(categorized_csv, query, nlp_file)
+    nlp_response = process_nlp_queries_task(
+        categorized_csv,
+        query,
+        nlp_file,
+        visualization_file
+    )
 
     return {
         "analysis": analysis,

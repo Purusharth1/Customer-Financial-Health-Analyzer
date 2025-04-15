@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/417310941332047470/820f77bf0f3648c38d82ea95e24826e9/artifacts
+end_time: 1744739142120
+entry_point_name: ''
+experiment_id: '417310941332047470'
+lifecycle_stage: active
+run_id: 820f77bf0f3648c38d82ea95e24826e9
+run_name: dazzling-carp-151
+run_uuid: 820f77bf0f3648c38d82ea95e24826e9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744739142039
+status: 3
+tags: []
+user_id: aditya

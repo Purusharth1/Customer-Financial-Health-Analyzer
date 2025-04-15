@@ -156,7 +156,7 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame 
         # Rule-based categorization
         start_time = pd.Timestamp.now()
         transactions_df["category"] = transactions_df.apply(
-            lambda row: apply_rules(row, valid_categories), axis=1,
+            lambda row: apply_rules(row), axis=1,
         )
         rule_time = (pd.Timestamp.now() - start_time).total_seconds()
         logger.info(

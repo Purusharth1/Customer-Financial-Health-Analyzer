@@ -17,7 +17,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 
-from src.utils import get_llm_config, sanitize_metric_name, setup_mlflow
+from utils import get_llm_config, sanitize_metric_name, setup_mlflow
 
 sys.path.append(str(Path(__file__).parent.parent))
 
