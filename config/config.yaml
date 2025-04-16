@@ -1,3 +1,311 @@
 paths:
   input_dir: "data/input/"
   output_dir: "data/output/"
+
+transaction_categories:
+  # Income categories
+  income:
+    - "Income (Salary)"
+    - "Income (Investment)"
+    - "Income (Refund)"
+    - "Income (Gift/Transfer)"
+    - "Income (Other)"
+  
+  # Essential expenses
+  essential_expenses:
+    - "Expense (Housing)"  # Rent, mortgage, property taxes
+    - "Expense (Utilities)"  # Electricity, water, gas, internet
+    - "Expense (Groceries)"
+    - "Expense (Transportation)"  # Fuel, public transport, car maintenance
+    - "Expense (Healthcare)"  # Medical bills, insurance, pharmacy
+  
+  # Discretionary expenses
+  discretionary_expenses:
+    - "Expense (Dining Out)"
+    - "Expense (Shopping)"  # Clothing, electronics, etc.
+    - "Expense (Entertainment)"  # Movies, subscriptions, events
+    - "Expense (Travel)"
+  
+  # Financial categories
+  financial:
+    - "Expense (Debt Payment)"  # Credit card, loans, EMIs
+    - "Expense (Insurance)"
+    - "Savings/Investment"  # Mutual funds, stocks, deposits
+    - "Expense (Fees)"  # Bank charges, penalties
+  
+  # Miscellaneous
+  miscellaneous:
+    - "Expense (Education)"
+    - "Expense (Charity/Gifts)"
+    - "Expense (Business)"  # Business-related expenses
+    - "Expense (Other)"
+
+# Category keywords for rule-based matching
+category_keywords:
+  "Income (Salary)":
+    - "SALARY"
+    - "MONTHLY PAY"
+    - "COMPENSATION"
+    - "WAGES"
+    - "PAYROLL"
+    - "CREDIT-SALARY"
+  
+  "Income (Investment)":
+    - "INTEREST"
+    - "DIVIDEND"
+    - "MUTUAL FUND"
+    - "REDEMPTION"
+    - "SIP RETURN"
+    - "FD INT" 
+    - "STCG"
+    - "LTCG"
+  
+  "Income (Refund)":
+    - "REFUND"
+    - "CASHBACK"
+    - "RETURN"
+    - "TXN REVERSAL"
+    - "CHARGEBACK"
+  
+  "Income (Gift/Transfer)":
+    - "GIFT"
+    - "NEFTCR FROM"
+    - "IMPS/FROM"
+    - "UPI/FROM"
+    - "RECEIVED FROM"
+  
+  "Income (Other)":
+    - "CREDIT"
+    - "RENTAL"
+    - "CONSULTING"
+    - "HONORARIUM"
+    - "COMMISSION"
+  
+  "Expense (Housing)":
+    - "RENT"
+    - "PROPERTY TAX"
+    - "HOUSING LOAN"
+    - "MAINTENANCE"
+    - "SOCIETY"
+    - "PROPERTY"
+  
+  "Expense (Utilities)":
+    - "ELECTRICITY"
+    - "WATER"
+    - "GAS"
+    - "BROADBAND"
+    - "INTERNET"
+    - "PHONE BILL"
+    - "MOBILE RECHARGE"
+    - "DTH"
+    - "TATA SKY"
+    - "JIOFIBER"
+    - "AIRTEL"
+    - "VODAFONE"
+  
+  "Expense (Groceries)":
+    - "GROCERY"
+    - "SUPERMARKET"
+    - "BIG BASKET"
+    - "BIGBASKET"
+    - "GROFERS"
+    - "BLINKIT"
+    - "SWIGGY INSTAMART"
+    - "DMART"
+    - "RELIANCE FRESH"
+    - "MORE"
+    - "NATURE BASKET"
+    - "EASYDAY"
+  
+  "Expense (Transportation)":
+    - "PETROL"
+    - "FUEL"
+    - "UBER"
+    - "OLA"
+    - "RAPIDO"
+    - "AUTO"
+    - "METRO"
+    - "BUS"
+    - "TRAIN"
+    - "PARKING"
+    - "CAR SERVICE"
+    - "FASTAG"
+  
+  "Expense (Healthcare)":
+    - "HOSPITAL"
+    - "CLINIC"
+    - "DOCTOR"
+    - "PHARMACY"
+    - "MEDICINE"
+    - "APOLLO"
+    - "MEDLIFE"
+    - "PHARMEASY"
+    - "1MG"
+    - "NETMEDS"
+    - "DIAGNOSTIC"
+    - "LAB TEST"
+  
+  "Expense (Dining Out)":
+    - "RESTAURANT"
+    - "CAFE"
+    - "ZOMATO"
+    - "SWIGGY"
+    - "DUNZO"
+    - "PIZZA"
+    - "MCDONALD"
+    - "STARBUCKS"
+    - "HOTEL"
+    - "BAR"
+    - "DINING"
+    - "FOOD DELIVERY"
+  
+  "Expense (Shopping)":
+    - "AMAZON"
+    - "FLIPKART"
+    - "MYNTRA"
+    - "AJIO"
+    - "RETAIL"
+    - "SHOPPING MALL"
+    - "PURCHASE"
+    - "CLOTH"
+    - "APPAREL"
+    - "ELECTRONICS"
+    - "FURNITURE"
+    - "CROMA"
+    - "IKEA"
+    - "POS"
+  
+  "Expense (Entertainment)":
+    - "NETFLIX"
+    - "AMAZON PRIME"
+    - "HOTSTAR"
+    - "DISNEY+"
+    - "SPOTIFY"
+    - "GAANA"
+    - "BOOKMYSHOW"
+    - "MOVIE"
+    - "CONCERT"
+    - "SUBSCRIPTION"
+    - "GAMING"
+    - "OTT"
+    - "FESTIVAL"
+  
+  "Expense (Travel)":
+    - "FLIGHT"
+    - "MAKEMYTRIP"
+    - "GOIBIBO"
+    - "IRCTC"
+    - "HOTEL BOOKING"
+    - "RESORT"
+    - "AIRBNB"
+    - "OYO"
+    - "TRAVEL AGENCY"
+    - "HOLIDAY"
+    - "VACATION"
+    - "TOUR"
+  
+  "Expense (Debt Payment)":
+    - "LOAN EMI"
+    - "HOME LOAN"
+    - "CAR LOAN"
+    - "PERSONAL LOAN"
+    - "EDUCATION LOAN"
+    - "CREDIT CARD BILL"
+    - "CC PAYMENT"
+    - "EMI"
+    - "DEBT"
+    - "REPAYMENT"
+    - "SBI CARD"
+    - "HDFC CREDIT"
+  
+  "Expense (Insurance)":
+    - "INSURANCE"
+    - "PREMIUM"
+    - "LIC"
+    - "POLICY"
+    - "HEALTH INSURANCE"
+    - "TERM INSURANCE"
+    - "LIFE INSURANCE"
+    - "CAR INSURANCE"
+    - "VEHICLE INSURANCE"
+  
+  "Savings/Investment":
+    - "INVESTMENT"
+    - "SIP"
+    - "FIXED DEPOSIT"
+    - "MUTUAL FUND"
+    - "STOCKS"
+    - "DEMAT"
+    - "ZERODHA"
+    - "GROWW"
+    - "UPSTOX"
+    - "COIN"
+    - "KUVERA"
+    - "ANGEL BROKING"
+    - "PPF"
+    - "NPS"
+  
+  "Expense (Fees)":
+    - "ANNUAL FEE"
+    - "CARD FEE"
+    - "LATE FEE"
+    - "CHARGES"
+    - "BANK CHARGES"
+    - "INTEREST CHARGES"
+    - "TRANSACTION FEE"
+    - "SERVICE CHARGE"
+    - "PROCESSING FEE"
+    - "BANKING FEES"
+  
+  "Expense (Education)":
+    - "SCHOOL"
+    - "COLLEGE"
+    - "UNIVERSITY"
+    - "TUITION"
+    - "COURSE"
+    - "EDUCATION"
+    - "EXAM"
+    - "SKILL"
+    - "TRAINING"
+    - "BOOKS"
+    - "UDEMY"
+    - "COURSERA"
+    - "UPGRAD"
+    - "GREAT LEARNING"
+  
+  "Expense (Charity/Gifts)":
+    - "DONATION"
+    - "CHARITY"
+    - "NGO"
+    - "CONTRIBUTION"
+    - "GIFT"
+    - "PRESENT"
+    - "BIRTHDAY"
+    - "WEDDING"
+  
+  "Expense (Business)":
+    - "BUSINESS"
+    - "OFFICE"
+    - "SUPPLIES"
+    - "STATIONERY"
+    - "WORKSPACE"
+    - "COWORKING"
+    - "CONFERENCE"
+    - "ZOOM"
+    - "MEETING"
+    - "DOMAIN"
+    - "HOSTING"
+    - "REGISTRATION"
+  
+  "Expense (Other)":
+    - "ATM"
+    - "WITHDRAWAL"
+    - "CASH"
+    - "MISC"
+    - "MISCELLANEOUS"
+    - "UNKNOWN"
+    - "OTHER"
+    - "PAYMENT"
+    - "BY CASH"
+    - "SELF"
+    - "TRANSFER"

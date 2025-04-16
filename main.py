@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Import functions from the src folder
@@ -20,6 +22,7 @@ from src.workflows import (
 )
 
 app = FastAPI(title="Financial Analysis API")
+app.mount("/static", StaticFiles(directory="ui/static"), name="static")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -34,6 +37,15 @@ OUTPUT_DIR = Path("data/output")
 INPUT_DIR = Path("data/input")
 for directory in [OUTPUT_DIR, INPUT_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
+
+@app.get("/", response_class=HTMLResponse)
+async def get_ui():
+    """Serve the main UI."""
+    try:
+        with open("ui/index.html") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="UI not found")
 
 
 @app.post("/parse_pdfs")

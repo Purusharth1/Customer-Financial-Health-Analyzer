@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinHealth Pro</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>FinHealth Pro</h1>
+        </div>
+        <div class="profile">
+            <div class="profile-pic"></div>
+            <div class="profile-info">
+                <h2>Vaibhav Sharma</h2>
+                <p>Premium Member</p>
+            </div>
+        </div>
+        <div class="account-info">
+            <p class="bank-name">HDFC BANK</p>
+            <p class="account-details">Acc: XXXX XXXX 4589</p>
+            <p class="account-details">IFSC: HDFC0001234</p>
+        </div>
+        <p class="menu-title">MAIN MENU</p>
+        <ul class="nav-menu">
+            <li class="active"><a href="#">Dashboard</a></li>
+            <li><a href="#">Transactions</a></li>
+            <li><a href="#">Budgets</a></li>
+            <li><a href="#">Investments</a></li>
+            <li><a href="#">Reports</a></li>
+            <li><a href="#">Settings</a></li>
+        </ul>
+        <div class="help-box">
+            <h3>Need Help?</h3>
+            <p>Our AI assistant can answer your questions</p>
+            <button class="ask-button" id="open-assistant">Ask Now</button>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="dashboard">
+            <div class="top-bar">
+                <h2>Financial Dashboard</h2>
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="Search transactions...">
+                    <div class="icon-buttons">
+                        <div class="icon-button">🔔</div>
+                        <div class="icon-button">⚙️</div>
+                    </div>
+                    <button class="upload-button" id="open-upload-modal">Upload</button>
+                </div>
+            </div>
+            <div class="dashboard-content">
+                <h3 class="section-title">Account Overview</h3>
+                <div class="card-container" id="account-overview">
+                    <p class="no-data" id="no-data-overview">Please upload bank statements to view your financial overview.</p>
+                </div>
+                <h3 class="section-title">Spending Trends</h3>
+                <div class="chart-container" id="charts">
+                    <p class="no-data" id="no-data-charts">Please upload bank statements to view spending trends.</p>
+                    <div class="line-chart-card" style="display: none;">
+                        <canvas id="line-chart"></canvas>
+                    </div>
+                    <div class="pie-chart-card" style="display: none;">
+                        <h4 class="pie-chart-title">Expense Breakdown</h4>
+                        <canvas id="pie-chart"></canvas>
+                        <div class="chart-legends"></div>
+                    </div>
+                </div>
+                <h3 class="section-title">Recent Transactions</h3>
+                <div class="transactions-container">
+                    <div id="transaction-list">
+                        <p class="no-data" id="no-data-transactions">Please upload bank statements to view transactions.</p>
+                    </div>
+                </div>
+                <h3 class="section-title">Financial Insights</h3>
+                <div class="insights-container" id="insights">
+                    <p class="no-data" id="no-data-insights">Please upload bank statements to view financial insights.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="upload-modal">
+        <div class="upload-modal">
+            <h2 class="modal-title">Upload Bank Statements</h2>
+            <div class="drop-area" id="drop-area">
+                <p class="drop-text">Drag & Drop PDF Files Here</p>
+                <p class="or-text">or</p>
+                <button class="browse-button" id="browse-files">Browse Files</button>
+                <input type="file" id="file-input" multiple accept=".pdf">
+            </div>
+            <p class="file-info">Supports HDFC Bank statements in PDF format (max 10 files)</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel-button" id="cancel-upload">Cancel</button>
+                <button class="modal-button upload-submit-button" id="submit-upload">Upload</button>
+            </div>
+        </div>
+    </div>
+    <div class="ai-assistant-modal" id="ai-assistant">
+        <div class="assistant-header">
+            <h3 class="assistant-title">AI Financial Assistant</h3>
+            <button class="close-button" id="close-assistant">×</button>
+        </div>
+        <div class="chat-container" id="chat-container"></div>
+        <div class="chat-input-container">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask something..."></textarea>
+            <button class="send-button" id="send-message">↑</button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

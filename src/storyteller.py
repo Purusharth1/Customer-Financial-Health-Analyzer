@@ -1,4 +1,5 @@
-"""Financial Summaries and Narrative Generation.
+"""
+Financial Summaries and Narrative Generation.
 
 This module generates concise summaries and narratives based on analyzed financial data.
 Key functionalities include:
@@ -14,12 +15,13 @@ from pathlib import Path
 import mlflow
 import pandas as pd
 
-from src.utils import get_llm_config, setup_mlflow
+
 
 sys.path.append(str(Path(__file__).parent.parent))
-from llm_setup.ollama_manager import query_llm
+from src.utils import setup_mlflow
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def generate_stories(input_csv: str, output_file: str) -> list[str]:
     """Generate financial summaries and narratives.
@@ -30,53 +32,66 @@ def generate_stories(input_csv: str, output_file: str) -> list[str]:
     
     Returns:
         List of story strings.
-
     """
     setup_mlflow()
-    llm_config = get_llm_config()
-    logging.info("Generating financial stories")
+    logger.info("Generating financial stories")
 
     with mlflow.start_run(run_name="Storytelling"):
         mlflow.log_param("input_csv", input_csv)
-        df = pd.read_csv(input_csv)
-        df["parsed_date"] = pd.to_datetime(df["parsed_date"])
+        start_time = pd.Timestamp.now()
+        try:
+            df = pd.read_csv(input_csv)
+            logger.info(f"Read CSV: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
+        except FileNotFoundError:
+            logger.exception("Input CSV not found: %s", input_csv)
+            return []
         mlflow.log_metric("transactions_storied", len(df))
 
-        # Group by month
+        t = pd.Timestamp.now()
+        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
         df["month"] = df["parsed_date"].dt.to_period("M")
+
+        # Aggregate by month
         monthly = df.groupby("month").agg({
             "Withdrawal (INR)": "sum",
             "Deposit (INR)": "sum",
-            "category": lambda x: x.value_counts().to_dict(),
+            "category": lambda x: x.value_counts().idxmax()  # Most frequent category
         }).reset_index()
+        monthly["net"] = monthly["Deposit (INR)"] - monthly["Withdrawal (INR)"]
+        logger.info(f"Aggregate: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
+        # Generate stories
+        t = pd.Timestamp.now()
         stories = []
-        for _, row in monthly.iterrows():
+        for idx, row in monthly.iterrows():
             month = str(row["month"])
             withdrawals = row["Withdrawal (INR)"]
             deposits = row["Deposit (INR)"]
-            categories = row["category"]
+            top_category = row["category"]
+            net = row["net"]
 
-            prompt = (
-                f"Summarize this month's financial activity for {month}: "
-                f"Total spent: {withdrawals:.2f} INR, Total received: {deposits:.2f} INR, "
-                f"Category breakdown: {categories}. "
-                "Return a concise summary (1-2 sentences) with no extra formatting."
-            )
-            try:
-                story = query_llm(prompt, llm_config).strip()
-                stories.append(f"{month}: {story}")
-            except Exception as e:
-                logging.exception(f"LLM storytelling failed for {month}: {e}")
-                stories.append(f"{month}: Spent {withdrawals:.2f} INR, received {deposits:.2f} INR.")
+            # Rule-based narrative
+            summary = f"In {month}, you spent ₹{withdrawals:.2f} and received ₹{deposits:.2f}"
+            if net > 0:
+                insight = f", saving ₹{net:.2f} with most spending on {top_category}."
+            elif net < 0:
+                insight = f", overspending by ₹{-net:.2f}, mainly on {top_category}."
+            else:
+                insight = f", balancing spending and income, primarily on {top_category}."
+            
+            stories.append(f"{month}: {summary}{insight}")
+        
+        logger.info(f"Stories: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
         # Save stories
+        t = pd.Timestamp.now()
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, "w") as f:
             f.write("\n".join(stories))
         mlflow.log_artifact(output_file)
+        logger.info(f"Save: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
-        logging.info("Stories generated")
+        logger.info(f"Total: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
         return stories
 
 if __name__ == "__main__":

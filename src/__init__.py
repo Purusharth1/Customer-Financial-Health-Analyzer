@@ -1,5 +1,2 @@
-"""Initialize the `src` package.
-
-This module makes the `src` directory a Python package, allowing other modules
-to import functionality from it. It serves as the entry point for the source code.
-"""
+"""Customer Financial Health Analyzer package."""
+__version__ = "0.1.0"

@@ -1,69 +1,69 @@
 narration,amount,frequency,category,type,match_type,regularity,first_date,last_date,occurrence_count
-05301050053402 -TPT-DEEPAK,7000.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-05-25,2016-05-25,2
-05301050053402 -TPT-FT,100.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-05-27,2016-05-27,2
-05301050057021 -TPT-FT,500.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-07-30,2016-07-30,2
-05301050057021 -TPT-FT,3000.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-08-31,2016-08-31,2
-05301050057021 -TPT-MUKESH,100.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-01-04,2016-01-04,2
-05301050057021 -TPT-MUKESH,1900.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-01-04,2016-01-04,2
-100358168826909/CITRUSAIRTEL,50.0,daily/workdays,Expense (utilities),withdrawal,exact_amount,high,2016-05-29,2016-05-29,2
-27881050000920 -TPT-FUND,1.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2016-09-22,2016-09-22,2
-27881050000920 -TPT-FUND,3000.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2016-09-22,2016-09-22,2
-27881050000920 -TPT-PAYMENT,1.0,daily/workdays,Income,withdrawal,exact_amount,high,2016-09-19,2016-09-19,2
-50100027640512 -TPT-FOR LOAN,5000.0,daily/workdays,Expense (loan),withdrawal,exact_amount,high,2016-09-12,2016-09-15,2
-50100027640512 -TPT-FORLOAN,5000.0,daily/workdays,Expense (loan),withdrawal,exact_amount,high,2016-09-12,2016-09-15,2
-50100027640512 -TPT-LOAN,2000.0,daily/workdays,Expense (loan),withdrawal,exact_amount,high,2016-09-21,2016-09-21,2
-50100193506379-TPT-PERSONAL,8000.0,daily/workdays,Income,withdrawal,exact_amount,high,2018-09-04,2018-09-04,2
-ATW-416021XXXXXX8060-P3AWMI10-MUMBAI,300.0,daily/workdays,Expense (other),withdrawal,exact_amount,high,2018-09-26,2018-09-26,2
-ATW-416021XXXXXX8060-S1ACMU94-THANE,500.0,daily/workdays,Expense (other),withdrawal,exact_amount,high,2018-09-18,2018-09-18,2
-EAW-416021XXXXXX8060-MUOD9463-THANE,500.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-09-09,2018-09-09,2
-FUEL SURCHG 532676XXXXXX3201 49003475,11.5,weekly,Expense (retail),withdrawal,exact_amount,high,2016-06-04,2016-06-11,2
-NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,5000.0,monthly,Expense (other),withdrawal,exact_amount,high,2016-06-15,2016-07-19,2
-NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,7000.0,approximately every 112 days,Expense (other),withdrawal,exact_amount,high,2016-05-19,2016-09-08,2
-NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,monthly,Expense (other),withdrawal,exact_amount,high,2016-06-15,2016-07-19,2
-NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,7000.0,approximately every 112 days,Expense (other),withdrawal,exact_amount,high,2016-05-19,2016-09-08,2
-NHDF6385796167/BILLDKVODAFONEINDIAL,119.18,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-06-12,2018-06-12,2
-NHDF6406143679/BILLDKKOTAKCARDS,11445.0,daily/workdays,Income,withdrawal,exact_amount,high,2018-06-19,2018-06-19,2
-NHDF6559735103/BILLDKVODAFONEINDIAL,264.32,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-08-08,2018-08-08,2
-NHDF6607489313/BILLDKRELIANCEJIOINF,399.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-08-23,2018-08-23,2
-NWD-416021XXXXXX8060-CCCB0004-THANE,500.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-08-08,2018-08-08,2
-NWD-416021XXXXXX8060-SB002702-MUMBAI,500.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2018-08-31,2018-08-31,2
-POS 532676XXXXXX3201 BY PASS SERVICES PO,200.0,approximately every 116 days,Expense (retail),withdrawal,exact_amount,high,2016-04-01,2016-07-26,2
-POS 532676XXXXXX3201 R. LAW SERVICE S PO,150.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2016-03-01,2016-03-06,2
-POS 532676XXXXXX3201 TRIO SERVICES POS D,200.0,approximately every 120 days,Expense (retail),withdrawal,exact_amount,high,2016-06-03,2016-10-01,2
-POS532676XXXXXX3201BYPASSSERVICESPO,200.0,approximately every 116 days,Expense (retail),withdrawal,exact_amount,high,2016-04-01,2016-07-26,2
-POS532676XXXXXX3201R.LAWSERVICESPO,150.0,daily/workdays,Expense (retail),withdrawal,exact_amount,high,2016-03-01,2016-03-06,2
-00141050244155 -TPT-TRANSFER,7000.0,daily/workdays,Income,deposit,exact_amount,high,2016-05-19,2016-05-19,2
-05301050053402 -TPT-FUND,500.0,daily/workdays,Income,deposit,exact_amount,high,2016-08-17,2016-08-17,2
-05301050053402 -TPT-FUNDTRANSFER,5000.0,approximately every 23 days,Income,deposit,exact_amount,high,2016-03-09,2016-04-01,2
-05301050057021 -TPT-BINAY_2000,100.0,daily/workdays,Income,deposit,exact_amount,high,2016-01-12,2016-01-12,2
-05301050057021 -TPT-BINAY_2000,1900.0,daily/workdays,Income,deposit,exact_amount,high,2016-01-12,2016-01-12,2
-05301050057021 -TPT-TRANSFER,2000.0,daily/workdays,Income,deposit,exact_amount,high,2016-03-09,2016-03-09,2
-27881050000920 -TPT-PMT,3000.0,daily/workdays,Income,deposit,exact_amount,high,2016-09-19,2016-09-19,2
-50100074457140 -TPT-LOAN,1.0,daily/workdays,Expense (retail),deposit,exact_amount,high,2016-09-09,2016-09-09,2
-50100074457140 -TPT-LOAN,5000.0,daily/workdays,Income,deposit,exact_amount,high,2016-09-09,2016-09-09,2
-GM1TSA/JL0330/19,7664.0,daily/workdays,Income,deposit,exact_amount,high,2018-08-04,2018-08-04,2
-GM1TSA/JU0363/19,13288.0,daily/workdays,Income,deposit,exact_amount,high,2018-07-05,2018-07-05,2
-IMPS-825011661610-NANDU -HDFC--ANUP,8000.0,daily/workdays,Income,deposit,exact_amount,high,2018-09-07,2018-09-07,2
-IMPS-P2A-607115555786-919007318609-INETI,13000.0,daily/workdays,Income,deposit,exact_amount,high,2016-03-11,2016-03-11,2
-IMPS-P2A-620610901141-919007318609-INETI,10000.0,daily/workdays,Income,deposit,exact_amount,high,2016-07-24,2016-07-24,2
-IMPS-P2A-623812662277-918981125267-P2BOT,200.0,daily/workdays,Income,deposit,exact_amount,high,2016-08-25,2016-08-25,2
-IMPS-P2A-626519594163-919007318609-INETI,5000.0,daily/workdays,Income,deposit,exact_amount,high,2016-09-21,2016-09-21,2
-IMPS-P2A-628014730691-919007318609-P2BOT,500.0,daily/workdays,Income,deposit,exact_amount,high,2016-10-06,2016-10-06,2
-MICRO ATM CASH DEP - HDFC,10000.0,biweekly,Income,deposit,exact_amount,high,2018-07-02,2018-07-18,2
-MICROATMCASHDEP-HDFC,10000.0,biweekly,Expense (retail),deposit,exact_amount,high,2018-07-02,2018-07-18,2
-NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,3000.0,approximately every 188 days,Income,deposit,exact_amount,high,2016-02-26,2016-09-01,2
-NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,22000.0,quarterly,Expense (retail),deposit,exact_amount,high,2016-05-25,2016-08-24,2
-NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,3000.0,approximately every 188 days,Income,deposit,exact_amount,high,2016-02-26,2016-09-01,2
-NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,quarterly,Income,deposit,exact_amount,high,2016-05-25,2016-08-24,2
-SALARY 123 STORES E COMMERCE PVT LTD,18396.0,monthly,Income,deposit,exact_amount,high,2016-09-07,2016-10-04,2
-SALARY123STORESECOMMERCEPRIVATELIM,18396.0,monthly,Income,deposit,exact_amount,high,2016-02-06,2016-07-08,6
-SALARY123STORESECOMMERCEPVTLTD,18396.0,monthly,Income,deposit,exact_amount,high,2016-09-07,2016-10-04,2
-UPI-303702011409044-9307676700@UPI-81551,7000.0,daily/workdays,Income,deposit,exact_amount,high,2018-06-04,2018-06-04,2
-UPI-303702011409044-9307676700@UPI-81561,1500.0,daily/workdays,Income,deposit,exact_amount,high,2018-06-05,2018-06-05,2
-UPI-303702011409044-9307676700@UPI-81701,2300.0,daily/workdays,Income,deposit,exact_amount,high,2018-06-19,2018-06-19,2
-UPI-303702011409044-9307676700@UPI-81901,2500.0,daily/workdays,Income,deposit,exact_amount,high,2018-07-09,2018-07-09,2
-UPI-303702011409044-9307676700@UPI-81921,2500.0,daily/workdays,Income,deposit,exact_amount,high,2018-07-11,2018-07-11,2
-UPI-303702011409044-9307676700@UPI-82051,2300.0,daily/workdays,Income,deposit,exact_amount,high,2018-07-24,2018-07-24,2
-UPI-303702011409044-9307676700@UPI-82131,5000.0,daily/workdays,Income,deposit,exact_amount,high,2018-08-01,2018-08-01,2
-UPI-303702011409044-9307676700@UPI-82341,2300.0,daily/workdays,Income,deposit,exact_amount,high,2018-08-22,2018-08-22,2
-UPI-303702011409044-9307676700@UPI-82551,5000.0,daily/workdays,Income,deposit,exact_amount,high,2018-09-12,2018-09-12,2
+05301050053402 -TPT-DEEPAK,7000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-05-25,2016-05-25,2
+05301050053402 -TPT-FT,100.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-05-27,2016-05-27,2
+05301050057021 -TPT-FT,500.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-07-30,2016-07-30,2
+05301050057021 -TPT-FT,3000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-08-31,2016-08-31,2
+05301050057021 -TPT-MUKESH,100.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-01-04,2016-01-04,2
+05301050057021 -TPT-MUKESH,1900.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-01-04,2016-01-04,2
+100358168826909/CITRUSAIRTEL,50.0,daily/workdays,Expense (Utilities),withdrawal,exact_amount,high,2016-05-29,2016-05-29,2
+27881050000920 -TPT-FUND,1.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-22,2016-09-22,2
+27881050000920 -TPT-FUND,3000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-22,2016-09-22,2
+27881050000920 -TPT-PAYMENT,1.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-19,2016-09-19,2
+50100027640512 -TPT-FOR LOAN,5000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-12,2016-09-15,2
+50100027640512 -TPT-FORLOAN,5000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-12,2016-09-15,2
+50100027640512 -TPT-LOAN,2000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2016-09-21,2016-09-21,2
+50100193506379-TPT-PERSONAL,8000.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-09-04,2018-09-04,2
+ATW-416021XXXXXX8060-P3AWMI10-MUMBAI,300.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-09-26,2018-09-26,2
+ATW-416021XXXXXX8060-S1ACMU94-THANE,500.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-09-18,2018-09-18,2
+EAW-416021XXXXXX8060-MUOD9463-THANE,500.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-09-09,2018-09-09,2
+FUEL SURCHG 532676XXXXXX3201 49003475,11.5,weekly,Expense (Transportation),withdrawal,exact_amount,high,2016-06-04,2016-06-11,2
+NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,5000.0,monthly,Expense (Other),withdrawal,exact_amount,high,2016-06-15,2016-07-19,2
+NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,7000.0,approximately every 112 days,Expense (Other),withdrawal,exact_amount,high,2016-05-19,2016-09-08,2
+NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,monthly,Expense (Other),withdrawal,exact_amount,high,2016-06-15,2016-07-19,2
+NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,7000.0,approximately every 112 days,Expense (Other),withdrawal,exact_amount,high,2016-05-19,2016-09-08,2
+NHDF6385796167/BILLDKVODAFONEINDIAL,119.18,daily/workdays,Expense (Utilities),withdrawal,exact_amount,high,2018-06-12,2018-06-12,2
+NHDF6406143679/BILLDKKOTAKCARDS,11445.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-06-19,2018-06-19,2
+NHDF6559735103/BILLDKVODAFONEINDIAL,264.32,daily/workdays,Expense (Utilities),withdrawal,exact_amount,high,2018-08-08,2018-08-08,2
+NHDF6607489313/BILLDKRELIANCEJIOINF,399.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-08-23,2018-08-23,2
+NWD-416021XXXXXX8060-CCCB0004-THANE,500.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-08-08,2018-08-08,2
+NWD-416021XXXXXX8060-SB002702-MUMBAI,500.0,daily/workdays,Expense (Other),withdrawal,exact_amount,high,2018-08-31,2018-08-31,2
+POS 532676XXXXXX3201 BY PASS SERVICES PO,200.0,approximately every 116 days,Expense (Shopping),withdrawal,exact_amount,high,2016-04-01,2016-07-26,2
+POS 532676XXXXXX3201 R. LAW SERVICE S PO,150.0,daily/workdays,Expense (Shopping),withdrawal,exact_amount,high,2016-03-01,2016-03-06,2
+POS 532676XXXXXX3201 TRIO SERVICES POS D,200.0,approximately every 120 days,Expense (Shopping),withdrawal,exact_amount,high,2016-06-03,2016-10-01,2
+POS532676XXXXXX3201BYPASSSERVICESPO,200.0,approximately every 116 days,Expense (Shopping),withdrawal,exact_amount,high,2016-04-01,2016-07-26,2
+POS532676XXXXXX3201R.LAWSERVICESPO,150.0,daily/workdays,Expense (Shopping),withdrawal,exact_amount,high,2016-03-01,2016-03-06,2
+00141050244155 -TPT-TRANSFER,7000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-05-19,2016-05-19,2
+05301050053402 -TPT-FUND,500.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-08-17,2016-08-17,2
+05301050053402 -TPT-FUNDTRANSFER,5000.0,approximately every 23 days,Income (Other),deposit,exact_amount,high,2016-03-09,2016-04-01,2
+05301050057021 -TPT-BINAY_2000,100.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-01-12,2016-01-12,2
+05301050057021 -TPT-BINAY_2000,1900.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-01-12,2016-01-12,2
+05301050057021 -TPT-TRANSFER,2000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-03-09,2016-03-09,2
+27881050000920 -TPT-PMT,3000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-09-19,2016-09-19,2
+50100074457140 -TPT-LOAN,1.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-09-09,2016-09-09,2
+50100074457140 -TPT-LOAN,5000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-09-09,2016-09-09,2
+GM1TSA/JL0330/19,7664.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-08-04,2018-08-04,2
+GM1TSA/JU0363/19,13288.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-07-05,2018-07-05,2
+IMPS-825011661610-NANDU -HDFC--ANUP,8000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-09-07,2018-09-07,2
+IMPS-P2A-607115555786-919007318609-INETI,13000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-03-11,2016-03-11,2
+IMPS-P2A-620610901141-919007318609-INETI,10000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-07-24,2016-07-24,2
+IMPS-P2A-623812662277-918981125267-P2BOT,200.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-08-25,2016-08-25,2
+IMPS-P2A-626519594163-919007318609-INETI,5000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-09-21,2016-09-21,2
+IMPS-P2A-628014730691-919007318609-P2BOT,500.0,daily/workdays,Income (Other),deposit,exact_amount,high,2016-10-06,2016-10-06,2
+MICRO ATM CASH DEP - HDFC,10000.0,biweekly,Income (Other),deposit,exact_amount,high,2018-07-02,2018-07-18,2
+MICROATMCASHDEP-HDFC,10000.0,biweekly,Income (Other),deposit,exact_amount,high,2018-07-02,2018-07-18,2
+NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,3000.0,approximately every 188 days,Income (Other),deposit,exact_amount,high,2016-02-26,2016-09-01,2
+NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,22000.0,quarterly,Income (Other),deposit,exact_amount,high,2016-05-25,2016-08-24,2
+NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,3000.0,approximately every 188 days,Income (Other),deposit,exact_amount,high,2016-02-26,2016-09-01,2
+NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,quarterly,Income (Other),deposit,exact_amount,high,2016-05-25,2016-08-24,2
+SALARY 123 STORES E COMMERCE PVT LTD,18396.0,monthly,Income (Salary),deposit,exact_amount,high,2016-09-07,2016-10-04,2
+SALARY123STORESECOMMERCEPRIVATELIM,18396.0,monthly,Income (Salary),deposit,exact_amount,high,2016-02-06,2016-07-08,6
+SALARY123STORESECOMMERCEPVTLTD,18396.0,monthly,Income (Salary),deposit,exact_amount,high,2016-09-07,2016-10-04,2
+UPI-303702011409044-9307676700@UPI-81551,7000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-06-04,2018-06-04,2
+UPI-303702011409044-9307676700@UPI-81561,1500.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-06-05,2018-06-05,2
+UPI-303702011409044-9307676700@UPI-81701,2300.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-06-19,2018-06-19,2
+UPI-303702011409044-9307676700@UPI-81901,2500.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-07-09,2018-07-09,2
+UPI-303702011409044-9307676700@UPI-81921,2500.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-07-11,2018-07-11,2
+UPI-303702011409044-9307676700@UPI-82051,2300.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-07-24,2018-07-24,2
+UPI-303702011409044-9307676700@UPI-82131,5000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-08-01,2018-08-01,2
+UPI-303702011409044-9307676700@UPI-82341,2300.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-08-22,2018-08-22,2
+UPI-303702011409044-9307676700@UPI-82551,5000.0,daily/workdays,Income (Other),deposit,exact_amount,high,2018-09-12,2018-09-12,2

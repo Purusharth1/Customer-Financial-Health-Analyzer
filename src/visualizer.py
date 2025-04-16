@@ -1,92 +1,162 @@
-"""Visualization of Financial Data.
+"""
+Visualization of Financial Data.
 
-This module generates visualizations such as pie charts, bar charts, and line charts to represent
+This module generates data for visualizations such as pie charts, bar charts, and line charts to represent
 financial data. Key functionalities include:
-- Creating pie charts for category-wise spending distribution.
-- Plotting bar charts for monthly or weekly spending trends.
-- Generating line charts to visualize spending over time.
-- Saving or exporting visualizations for reports.
+- Preparing data for pie charts for category-wise spending distribution.
+- Computing data for line charts to visualize spending trends over time.
+- Calculating account overview metrics for frontend display.
 """
 import logging
 from pathlib import Path
+import json
 
-import matplotlib.pyplot as plt
-import mlflow
 import pandas as pd
+import mlflow
 
 from src.utils import setup_mlflow
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def generate_visualizations(input_csv: str, output_dir: str) -> dict | None:
-    """Generate pie, bar, and line charts for transactions.
+def generate_visualizations(input_csv: str, output_dir: str) -> dict:
+    """Generate data for spending trends, expense breakdown, and account overview.
     
     Args:
         input_csv: Path to categorized transactions CSV.
-        output_dir: Directory to save charts.
+        output_dir: Directory to save outputs (optional).
     
     Returns:
-        Dictionary with chart file paths.
-
+        Dictionary with spending trends, expense breakdown, and account overview.
     """
     setup_mlflow()
-    logging.info("Generating visualizations")
+    logger.info(f"Generating visualization data: {input_csv}")
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    results = {}
+    results = {
+        "spending_trends": {"labels": ["No Data"], "expenses": [0], "budget": [0]},
+        "expense_breakdown": {"categories": ["No Data"], "percentages": [100]},
+        "account_overview": {
+            "total_balance": 0.0,
+            "monthly_income": 0.0,
+            "monthly_expense": 0.0,
+            "balance_percentage": 0.0,
+            "income_percentage": 0.0,
+            "expense_percentage": 0.0
+        }
+    }
 
     with mlflow.start_run(run_name="Visualization"):
         mlflow.log_param("input_csv", input_csv)
-        df = pd.read_csv(input_csv)
-        df["parsed_date"] = pd.to_datetime(df["parsed_date"])
+        start_time = pd.Timestamp.now()
+        try:
+            df = pd.read_csv(input_csv)
+            logger.info(f"Read CSV: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
+        except FileNotFoundError:
+            logger.exception("Input CSV not found: %s", input_csv)
+            # Save default results to JSON before returning
+            output_file = Path(output_dir) / "visualization_data.json"
+            with open(output_file, "w") as f:
+                json.dump(results, f)
+            logger.info(f"Default visualization data saved to {output_file}")
+            return results
+        if df.empty:
+            logger.warning(f"Empty CSV: {input_csv}")
+            # Save default results to JSON before returning
+            output_file = Path(output_dir) / "visualization_data.json"
+            with open(output_file, "w") as f:
+                json.dump(results, f)
+            logger.info(f"Default visualization data saved to {output_file}")
+            return results
         mlflow.log_metric("transactions_visualized", len(df))
 
-        # Pie Chart: Expense Breakdown
-        expenses = df[df["category"].str.contains("Expense")].groupby("category")["Withdrawal (INR)"].sum()
-        if not expenses.empty:
-            plt.figure(figsize=(8, 6))
-            expenses.plot.pie(autopct="%1.1f%%", startangle=90)
-            plt.title("Expense Breakdown")
-            pie_file = Path(output_dir) / "expense_pie.png"
-            plt.savefig(pie_file, bbox_inches="tight")
-            plt.close()
-            results["pie_chart"] = str(pie_file)
-            mlflow.log_artifact(pie_file)
+        # Validate columns
+        required = ["parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category"]
+        if not all(col in df for col in required):
+            missing = [col for col in required if col not in df]
+            logger.error("Missing columns: %s", missing)
+            # Save default results to JSON before returning
+            output_file = Path(output_dir) / "visualization_data.json"
+            with open(output_file, "w") as f:
+                json.dump(results, f)
+            logger.info(f"Default visualization data saved to {output_file}")
+            return results
 
-        # Bar Chart: Monthly Spending
+        # Preprocess
+        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
         df["month"] = df["parsed_date"].dt.to_period("M")
-        monthly = df[df["category"].str.contains("Expense")].groupby("month")["Withdrawal (INR)"].sum()
-        if not monthly.empty:
-            plt.figure(figsize=(10, 6))
-            monthly.plot.bar()
-            plt.title("Monthly Spending")
-            plt.xlabel("Month")
-            plt.ylabel("Amount (INR)")
-            bar_file = Path(output_dir) / "monthly_bar.png"
-            plt.savefig(bar_file, bbox_inches="tight")
-            plt.close()
-            results["bar_chart"] = str(bar_file)
-            mlflow.log_artifact(bar_file)
 
-        # Line Chart: Spending Trends
-        daily = df[df["category"].str.contains("Expense")].groupby("parsed_date")["Withdrawal (INR)"].sum()
-        if not daily.empty:
-            plt.figure(figsize=(10, 6))
-            daily.plot.line()
-            plt.title("Spending Trends Over Time")
-            plt.xlabel("Date")
-            plt.ylabel("Amount (INR)")
-            line_file = Path(output_dir) / "trends_line.png"
-            plt.savefig(line_file, bbox_inches="tight")
-            plt.close()
-            results["line_chart"] = str(line_file)
-            mlflow.log_artifact(line_file)
+        # Spending Trends
+        monthly_expenses = df[df["Withdrawal (INR)"] > 0].groupby("month")["Withdrawal (INR)"].sum()
+        monthly_income = df[df["Deposit (INR)"] > 0].groupby("month")["Deposit (INR)"].sum()
+        labels = sorted(set(monthly_expenses.index).union(monthly_income.index))
+        labels = [str(m) for m in labels]
+        expenses = [float(monthly_expenses.get(m, 0)) for m in labels]
+        budget = [sum(expenses) / len(labels) * 1.2 if labels else 0 for _ in labels]  # Mock budget
+        results["spending_trends"] = {
+            "labels": labels or ["No Data"],
+            "expenses": expenses or [0],
+            "budget": budget or [0]
+        }
 
-        logging.info("Visualizations generated")
+        # Expense Breakdown
+        expense_cats = df[df["Withdrawal (INR)"] > 0].groupby("category")["Withdrawal (INR)"].sum()
+        total_expense = expense_cats.sum()
+        categories = expense_cats.index.tolist() or ["No Expenses"]
+        percentages = [float(amt / total_expense * 100) if total_expense else 100 for amt in expense_cats] or [100]
+        results["expense_breakdown"] = {
+            "categories": categories,
+            "percentages": percentages
+        }
+
+        # Account Overview
+        total_income = df["Deposit (INR)"].sum()
+        total_expense = df["Withdrawal (INR)"].sum()
+        total_balance = total_income - total_expense
+        latest_month = df["month"].max()
+        prev_month = latest_month - 1
+        latest_income = df[df["month"] == latest_month]["Deposit (INR)"].sum()
+        latest_expense = df[df["month"] == latest_month]["Withdrawal (INR)"].sum()
+        prev_income = df[df["month"] == prev_month]["Deposit (INR)"].sum()
+        prev_expense = df[df["month"] == prev_month]["Withdrawal (INR)"].sum()
+        prev_balance = prev_income - prev_expense
+        results["account_overview"] = {
+            "total_balance": float(total_balance),
+            "monthly_income": float(latest_income),
+            "monthly_expense": float(latest_expense),
+            "balance_percentage": float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
+            "income_percentage": float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
+            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0)
+        }
+
+        # Log metrics
+        mlflow.log_metrics({
+            "total_balance": total_balance,
+            "monthly_income": latest_income,
+            "monthly_expense": latest_expense,
+            "expense_categories_count": len(categories),
+            "months_analyzed": len(labels)
+        })
+
+        # Save results to visualization_data.json
+        output_file = Path(output_dir) / "visualization_data.json"
+        with open(output_file, "w") as f:
+            json.dump(results, f)
+        logger.info(f"Visualization data saved to {output_file}")
+
+        # Also save a copy to charts directory if it's different from output_dir
+        charts_dir = Path(output_dir) / "charts"
+        if charts_dir != Path(output_dir) and charts_dir.exists():
+            charts_file = charts_dir / "visualization_data.json"
+            with open(charts_file, "w") as f:
+                json.dump(results, f)
+            logger.info(f"Visualization data also saved to {charts_file}")
+
+        logger.info(f"Visualization data generated: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
         return results
 
 if __name__ == "__main__":
     input_csv = "data/output/categorized.csv"
-    output_dir = "data/output/charts"
+    output_dir = "data/output"
     results = generate_visualizations(input_csv, output_dir)
     print(results)

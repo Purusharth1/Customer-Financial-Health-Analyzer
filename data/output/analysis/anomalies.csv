@@ -1,112 +1,99 @@
-parsed_date,Narration,amount,category,z_score,severity,type,detection_method,prev_amount,amount_change_ratio
-2018-07-09,NHDF6468764139/SBICARDS,35914.0,Expense (retail),5.857637512214643,extreme,withdrawal,statistical,,
-2018-07-09,NHDF6468764139/SBI CARDS,35914.0,Expense (retail),5.857637512214643,extreme,withdrawal,statistical,,
-2016-01-25,05301050053402 -TPT-RAJ2607,8000.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.45,698.6899563318777
-2016-02-26,05301050053402 -TPT-FOR HDFC CC,3000.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.45,262.0087336244542
-2016-03-02,05301050057021 -TPT-MUKESH CC,2000.0,Expense (retail),,extreme,withdrawal,sudden_increase,150.0,13.333333333333334
-2016-03-06,POS 532676XXXXXX3201 R. LAW SERVICE S PO,150.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.45,13.100436681222709
-2016-03-11,05301050057021 -TPT-FOR3242,2000.0,Expense (retail),,extreme,withdrawal,sudden_increase,150.0,13.333333333333334
-2016-04-12,05301050053402 -TPT-TO RAJ,4000.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.45,349.34497816593887
-2016-04-22,05301050053402 -TPT-FOR2607,5000.0,Expense (retail),,extreme,withdrawal,sudden_increase,5.73,872.6003490401396
-2016-06-10,POS 532676XXXXXX3201 TRIO SERVICES POS D Page No .: 5,200.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.5,17.391304347826086
-2016-07-26,POS 532676XXXXXX3201 BY PASS SERVICES PO,200.0,Expense (retail),,extreme,withdrawal,sudden_increase,5.75,34.78260869565217
-2016-08-24,05301050053402 -TPT-FURND T,1565.0,Expense (retail),,extreme,withdrawal,sudden_increase,5.75,272.17391304347825
-2016-09-22,27881050000920 -TPT-FUND,3000.0,Expense (retail),,extreme,withdrawal,sudden_increase,1.0,3000.0
-2016-09-29,GHDF4789456211/SBICARDS,3602.0,Expense (retail),,extreme,withdrawal,sudden_increase,5.75,626.4347826086956
-2018-06-09,NHDF6376325463/SBICARDS,2820.0,Expense (retail),,extreme,withdrawal,sudden_increase,11.5,245.2173913043478
-2018-06-19,NHDF6406143679/BILLDKKOTAKCARDS,11445.0,Expense (retail),,extreme,withdrawal,sudden_increase,119.18,96.0312132908206
-2018-07-09,NHDF6468764139/SBICARDS,35914.0,Expense (retail),,extreme,withdrawal,sudden_increase,1760.0,20.40568181818182
-2018-09-10,NHDF6669071973/SBI CARDS,3372.0,Expense (retail),,high,withdrawal,sudden_increase,500.0,6.744
-2018-10-10,PHDF6774869440/SBI CARDS,10060.0,Expense (retail),,high,withdrawal,sudden_increase,1160.0,8.672413793103448
-2016-05-25,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,22000.0,Expense (retail),3.2251869016462544,high,deposit,statistical,,
-2018-07-09,CASHDEPMIRAROAD-,22500.0,Expense (retail),3.3132272867892176,high,deposit,statistical,,
-2016-01-28,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,2000.0,Expense (retail),,extreme,deposit,sudden_increase,11.45,174.67248908296943
-2016-04-18,CASHDEPCHAPRA,9000.0,Expense (retail),,extreme,deposit,sudden_increase,11.45,786.0262008733625
-2016-05-26,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,4000.0,Expense (retail),,high,deposit,sudden_increase,433.19,9.233823495463884
-2016-07-11,05301050053402 -TPT-FUND TRANSFER,200.0,Expense (retail),,extreme,deposit,sudden_increase,11.5,17.391304347826086
-2016-08-09,05301050057021 -TPT-RAJ1400,1400.0,Expense (retail),,extreme,deposit,sudden_increase,11.5,121.73913043478261
-2016-10-10,REV FUEL SCHG TXN 021016,11.5,Expense (retail),,extreme,deposit,sudden_increase,1.0,11.5
-2018-07-02,MICROATMCASHDEP-HDFC,10000.0,Expense (retail),,extreme,deposit,sudden_increase,11.5,869.5652173913044
-2018-06-19,NHDF6406143679/BILLDKKOTAKCARDS,11445.0,Income,3.0028970971724536,high,withdrawal,statistical,,
-2016-01-04,05301050057021 -TPT-MUKESH,1900.0,Income,,extreme,withdrawal,sudden_increase,100.0,19.0
-2016-02-26,05301050053402 -TPT-FORHDFCCC,3000.0,Income,,extreme,withdrawal,sudden_increase,11.45,262.0087336244542
-2016-03-11,05301050053402 -TPT-FOR 3242,5000.0,Income,,extreme,withdrawal,sudden_increase,11.45,436.6812227074236
-2016-04-12,05301050053402 -TPT-TORAJ,4000.0,Income,,extreme,withdrawal,sudden_increase,11.45,349.34497816593887
-2016-05-25,05301050053402 -TPT-DEEPAK,7000.0,Income,,extreme,withdrawal,sudden_increase,5.73,1221.6404886561954
-2016-07-30,05301050057021 -TPT-FT,500.0,Income,,extreme,withdrawal,sudden_increase,5.75,86.95652173913044
-2016-09-22,27881050000920 -TPT-FUND,3000.0,Income,,extreme,withdrawal,sudden_increase,1.0,3000.0
-2018-06-09,NHDF6376325463/SBI CARDS,2820.0,Income,,extreme,withdrawal,sudden_increase,11.5,245.2173913043478
-2018-06-18,ACHD-TPACHHOME-105909750,2284.98,Income,,extreme,withdrawal,sudden_increase,119.18,19.172512166470884
-2018-06-19,NHDF6406143679/BILLDKKOTAKCARDS,11445.0,Income,,high,withdrawal,sudden_increase,2284.98,5.008796575900008
-2016-01-11,SALARY-123 STORES E COMMERCE PRIVATE LIM,18396.0,Income,,high,deposit,sudden_increase,2000.0,9.198
-2016-01-11,SALARY-123STORESECOMMERCEPRIVATELIM,18396.0,Income,,high,deposit,sudden_increase,2600.0,7.075384615384616
-2016-01-12,05301050057021 -TPT-BINAY_2000,1900.0,Income,,extreme,deposit,sudden_increase,100.0,19.0
-2016-01-19,05301050053402 -TPT-FUND TRANSFER,10000.0,Income,,high,deposit,sudden_increase,1900.0,5.2631578947368425
-2016-02-06,SALARY 123 STORES E COMMERCE PRIVATE LIM Page No .: 1,18396.0,Income,,high,deposit,sudden_increase,2000.0,9.198
-2016-03-07,SALARY 123 STORES E COMMERCE PRIVATE LIM,18396.0,Income,,high,deposit,sudden_increase,2000.0,9.198
-2016-03-11,IMPS-P2A-607115555786-919007318609-INETI,13000.0,Income,,high,deposit,sudden_increase,2000.0,6.5
-2016-03-24,NEFTCR-SBIN0003907-MR BINAYKUMARSHAW,2500.0,Income,,extreme,deposit,sudden_increase,11.45,218.3406113537118
-2016-04-01,05301050053402 -TPT-FUND TRANSFER,5000.0,Income,,extreme,deposit,sudden_increase,79.0,63.29113924050633
-2016-04-18,CASH DEP CHAPRA,9000.0,Income,,extreme,deposit,sudden_increase,11.45,786.0262008733625
-2016-06-06,SALARY 123 STORES E COMMERCE PRIVATE LIM,18396.0,Income,,extreme,deposit,sudden_increase,433.19,42.4663542556384
-2016-07-01,CREDITINTERESTCAPITALISED,76.0,Income,,high,deposit,sudden_increase,11.5,6.608695652173913
-2016-07-05,NEFTCR-SBIN0003907-MR BINAYKUMARSHAW,9500.0,Income,,extreme,deposit,sudden_increase,76.0,125.0
-2016-07-21,FT - CR - 50200017844273 - AMBA ROADWAYS,3950.0,Income,,extreme,deposit,sudden_increase,200.0,19.75
-2016-08-06,SALARY123STORESECOMMERCEPRIVATELIMI,18396.0,Income,,extreme,deposit,sudden_increase,1800.0,10.22
-2016-08-24,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,Income,,extreme,deposit,sudden_increase,1100.0,20.0
-2016-08-31,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,4000.0,Income,,extreme,deposit,sudden_increase,200.0,20.0
-2016-09-07,SALARY123STORESECOMMERCEPVTLTD,18396.0,Income,,high,deposit,sudden_increase,3000.0,6.132
-2016-09-12,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,11000.0,Income,,extreme,deposit,sudden_increase,1.0,11000.0
-2016-10-03,FT-CR-50200017844273-AMBAROADWAYS,7100.0,Income,,extreme,deposit,sudden_increase,44.0,161.36363636363637
-2018-06-02,GM1TSA/MY0326/19,21870.01,Income,,extreme,deposit,sudden_increase,500.0,43.740019999999994
-2018-07-02,MICRO ATM CASH DEP - HDFC,10000.0,Income,,extreme,deposit,sudden_increase,156.0,64.1025641025641
-2018-07-05,GM1TSA/JU0363/19,13288.0,Income,,high,deposit,sudden_increase,2000.0,6.644
-2018-07-05,GM1TSA/JU0363/19,13288.0,Income,,high,deposit,sudden_increase,2000.0,6.644
-2018-07-09,CASH DEP MIRA ROAD -,22500.0,Income,,high,deposit,sudden_increase,2500.0,9.0
-2018-09-01,FT - CR - 00030340017385 - INDIABULLS HO Page No .: 3,15230.39,Income,,high,deposit,sudden_increase,2300.0,6.6219086956521735
-2018-10-03,CASH DEP MIRA ROAD -,6800.0,Income,,extreme,deposit,sudden_increase,60.0,113.33333333333333
-2016-07-09,IMPS-P2A-619122311541-FOREMI-BINAYKUMA,16000.0,Expense (loan),3.614593990744448,high,withdrawal,statistical,,
-2016-07-09,IMPS-P2A-619122311541-FOR EMI-BINAY KUMA,16000.0,Expense (loan),3.614593990744448,high,withdrawal,statistical,,
-2016-09-12,50100027640512 -TPT-FOR LOAN,5000.0,Expense (loan),,extreme,withdrawal,sudden_increase,1.0,5000.0
-2016-09-12,50100027640512 -TPT-FORLOAN,5000.0,Expense (loan),,extreme,withdrawal,sudden_increase,1.0,5000.0
-2016-03-09,NEFT DR-SBIN0003907-BINAY KUMAR SHAW-NET,23000.0,Expense (other),3.169391472546749,high,withdrawal,statistical,,
-2016-03-09,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,23000.0,Expense (other),3.169391472546749,high,withdrawal,statistical,,
-2016-05-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,25000.0,Expense (other),3.5035446000194845,high,withdrawal,statistical,,
-2016-05-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,25000.0,Expense (other),3.5035446000194845,high,withdrawal,statistical,,
-2016-01-12,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,10000.0,Expense (other),,high,withdrawal,sudden_increase,1600.0,6.25
-2016-02-09,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,16000.0,Expense (other),,high,withdrawal,sudden_increase,1946.0,8.221993833504625
-2016-02-29,NEFTDR-UTBI0TOPA23-MANOHARLALSHAW-NETB,100.0,Expense (other),,extreme,withdrawal,sudden_increase,8.59,11.641443538998836
-2016-03-09,NEFT DR-SBIN0003907-BINAY KUMAR SHAW-NET,23000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.86,8041.9580419580425
-2016-03-09,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,23000.0,Expense (other),,extreme,withdrawal,sudden_increase,1600.0,14.375
-2016-03-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,4900.0,Expense (other),,extreme,withdrawal,sudden_increase,8.59,570.4307334109429
-2016-04-03,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,500.0,Expense (other),,extreme,withdrawal,sudden_increase,2.86,174.82517482517483
-2016-04-09,IMPS-P2A-610012155231-FOR 3242-BINAY KUM,17000.0,Expense (other),,extreme,withdrawal,sudden_increase,1600.0,10.625
-2016-04-09,IMPS-P2A-610012155231-FOR3242-BINAYKUM,17000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.86,5944.055944055945
-2016-04-18,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,9000.0,Expense (other),,extreme,withdrawal,sudden_increase,5.73,1570.6806282722512
-2016-04-22,3RD PARTY CASH TXN INC ST & EC 180416,114.5,Expense (other),,extreme,withdrawal,sudden_increase,2.86,40.03496503496503
-2016-05-02,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,7400.0,Expense (other),,extreme,withdrawal,sudden_increase,5.73,1291.4485165794065
-2016-05-16,3RD PARTY CASH TXN INC ST & EC 130516,114.5,Expense (other),,extreme,withdrawal,sudden_increase,2.86,40.03496503496503
-2016-05-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,7000.0,Expense (other),,extreme,withdrawal,sudden_increase,114.5,61.1353711790393
-2016-06-07,NEFT DR-CORP0000052-RAJ CORPORATION BANK,17000.0,Expense (other),,extreme,withdrawal,sudden_increase,8.59,1979.0454016298022
-2016-06-07,NEFTDR-CORP0000052-RAJCORPORATIONBANK,17000.0,Expense (other),,extreme,withdrawal,sudden_increase,100.0,170.0
-2016-06-15,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,Expense (other),,extreme,withdrawal,sudden_increase,8.63,579.3742757821552
-2016-07-12,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,2200.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,763.8888888888889
-2016-07-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,1736.111111111111
-2016-07-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,5000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,1736.111111111111
-2016-07-24,IMPS-P2A-620611378331-FOR TYRE-MANOHARLA,2000.0,Expense (other),,extreme,withdrawal,sudden_increase,5.75,347.82608695652175
-2016-07-25,IMPS-P2A-620712134398-FOR TYRE-SINGH TRA,1500.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,520.8333333333334
-2016-08-09,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,18000.0,Expense (other),,extreme,withdrawal,sudden_increase,5.75,3130.4347826086955
-2016-08-17,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,1600.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,555.5555555555555
-2016-09-08,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,7000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,2430.5555555555557
-2016-09-09,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,13000.0,Expense (other),,high,withdrawal,sudden_increase,2000.0,6.5
-2016-09-19,IMPS-P2A-626320196795-FOR 2607-BINAY KUM,5350.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,1857.638888888889
-2016-09-26,"NEFT DR-UTBI0UPKD40-WIFFY-NETBANK, MUM-N",100.0,Expense (other),,extreme,withdrawal,sudden_increase,5.75,17.391304347826086
-2016-10-03,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,4500.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,1562.5
-2018-06-04,"NEFT DR-UBIN0539686-RAJU DUBEY-NETBANK,",5000.0,Expense (other),,extreme,withdrawal,sudden_increase,2.88,1736.111111111111
-2018-09-25,IMPS-826820317252-RAMNAYANKANOJIA-CORP-,4430.0,Expense (other),,high,withdrawal,sudden_increase,500.0,8.86
-2016-08-24,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,20485.73,Expense (utilities),3.1544675857161906,high,withdrawal,statistical,,
-2016-08-24,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,20485.73,Expense (utilities),3.1544675857161906,high,withdrawal,statistical,,
-2016-06-22,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,5945.0,Expense (utilities),,extreme,withdrawal,sudden_increase,50.0,118.9
-2016-08-24,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,20485.73,Expense (utilities),,extreme,withdrawal,sudden_increase,100.0,204.8573
-2016-10-10,"Unusual gap after this transaction
-                        (600.0 days)",0.0,timing_anomaly,,moderate,gap,timing_gap,,
+parsed_date,Narration,amount,type,severity,category,detection_method
+2016-01-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,21000.0,withdrawal,moderate,Expense (Other),statistical
+2016-01-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,21000.0,withdrawal,moderate,Expense (Other),statistical
+2016-03-09,NEFT DR-SBIN0003907-BINAY KUMAR SHAW-NET,23000.0,withdrawal,moderate,Expense (Other),statistical
+2016-03-09,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,23000.0,withdrawal,moderate,Expense (Other),statistical
+2016-05-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,25000.0,withdrawal,moderate,Expense (Other),statistical
+2016-05-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,25000.0,withdrawal,moderate,Expense (Other),statistical
+2016-08-24,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,20485.73,withdrawal,moderate,Expense (Other),statistical
+2016-08-24,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,20485.73,withdrawal,moderate,Expense (Other),statistical
+2016-09-07,POS532676XXXXXX3201P.C.CHANDRAPOSDE,5685.0,withdrawal,moderate,Expense (Shopping),statistical
+2016-09-07,POS 532676XXXXXX3201 P.C. CHANDRA POS DE,5685.0,withdrawal,moderate,Expense (Shopping),statistical
+2018-07-09,NHDF6468764139/SBICARDS,35914.0,withdrawal,high,Expense (Other),statistical
+2018-07-09,NHDF6468764139/SBI CARDS,35914.0,withdrawal,high,Expense (Debt Payment),statistical
+2016-01-04,05301050057021 -TPT-MUKESH,1900.0,withdrawal,high,Expense (Other),sudden_increase
+2016-01-12,NEFT DR-SBIN0003907-BINAY KUMAR SHAW-NET,10000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-02-09,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,16000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-02-25,IBBILLPAYDR-HDFCVE-489377XXXXXX2939,2712.86,withdrawal,high,Expense (Other),sudden_increase
+2016-03-02,05301050057021 -TPT-MUKESH CC,2000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-03-09,NEFT DR-SBIN0003907-BINAY KUMAR SHAW-NET,23000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-03-09,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,23000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-03-16,05301050053402 -TPT-FUNDTRANSFERTORA,2000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-03-24,IB BILLPAY DR-HDFCVE-489377XXXXXX2939,3000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-09,IMPS-P2A-610012155231-FOR3242-BINAYKUM,17000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-12,05301050053402 -TPT-TO RAJ,4000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-18,NEFTDR-SBIN0003907-BINAYKUMARSHAW-NET,9000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-22,05301050053402 -TPT-FOR2607,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-22,3RD PARTY CASH TXN INC ST & EC 200416,114.5,withdrawal,high,Expense (Other),sudden_increase
+2016-04-22,05301050053402 -TPT-FOR 2607,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-04-23,IBBILLPAYDR-HDFCVE-489377XXXXXX2939,4600.0,withdrawal,high,Expense (Other),sudden_increase
+2016-05-02,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,7400.0,withdrawal,high,Expense (Other),sudden_increase
+2016-05-16,3RD PARTY CASH TXN INC ST & EC 130516,114.5,withdrawal,high,Expense (Other),sudden_increase
+2016-05-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,7000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-05-25,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,14963.01,withdrawal,high,Expense (Other),sudden_increase
+2016-06-07,NEFTDR-CORP0000052-RAJCORPORATIONBANK,17000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-06-07,NEFT DR-CORP0000052-RAJ CORPORATION BANK,17000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-06-15,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-06-22,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,5945.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-19,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-19,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-21,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,3263.3,withdrawal,high,Expense (Other),sudden_increase
+2016-07-21,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,3263.3,withdrawal,high,Expense (Other),sudden_increase
+2016-07-25,IMPS-P2A-620712134398-FORTYRE-SINGHTRA,1500.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-25,IMPS-P2A-620712134398-FOR TYRE-SINGH TRA,1500.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-30,05301050057021 -TPT-FT,500.0,withdrawal,high,Expense (Other),sudden_increase
+2016-07-30,05301050057021 -TPT-FT,500.0,withdrawal,high,Expense (Other),sudden_increase
+2016-08-09,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,18000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-08-17,NEFT DR-SBIN00CARDS-SBI CREDIT CARD-NETB Page No .: 7,1600.0,withdrawal,high,Expense (Other),sudden_increase
+2016-08-24,05301050053402 -TPT-FURND T,1565.0,withdrawal,high,Expense (Other),sudden_increase
+2016-08-24,IBBILLPAYDR-HDFCVE-489377XXXXXX2230,20485.73,withdrawal,high,Expense (Other),sudden_increase
+2016-09-07,POS532676XXXXXX3201P.C.CHANDRAPOSDE,5685.0,withdrawal,high,Expense (Shopping),sudden_increase
+2016-09-09,NEFT DR-SBIN0014517-BINAY KUMAR SHAW-NET,13000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-12,NEFT CHGS INCL ST & CESS 090916,5.75,withdrawal,high,Expense (Other),sudden_increase
+2016-09-12,NEFT DR-SBIN00CARDS-SBI CREDIT CARD-NETB,4200.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-12,NEFTDR-SBIN00CARDS-SBICREDITCARD-NETB,4200.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-12,50100027640512 -TPT-FOR LOAN,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-15,50100027640512 -TPT-FORLOAN,5000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-19,IMPS-P2A-626320196795-FOR2607-BINAYKUM,5350.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-22,27881050000920 -TPT-FUND,3000.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-26,"NEFTDR-UTBI0UPKD40-WIFFY-NETBANK,MUM-N",100.0,withdrawal,high,Expense (Other),sudden_increase
+2016-09-26,IB BILLPAY DR-HDFCVE-489377XXXXXX2230,3197.97,withdrawal,high,Expense (Other),sudden_increase
+2016-10-03,NEFTDR-SBIN0014517-BINAYKUMARSHAW-NET,4500.0,withdrawal,high,Expense (Other),sudden_increase
+2018-06-03,IB BILLPAY DR-HDFCPE-545964XXXXXX3563,1285.98,withdrawal,high,Expense (Other),sudden_increase
+2018-06-19,NHDF6406143679/BILLDKKOTAKCARDS,11445.0,withdrawal,high,Expense (Other),sudden_increase
+2018-06-26,POS416021XXXXXX8060DCSIRELIANCEPOSDE,1760.0,withdrawal,high,Expense (Shopping),sudden_increase
+2018-07-09,NHDF6468764139/SBICARDS,35914.0,withdrawal,high,Expense (Other),sudden_increase
+2018-07-09,NHDF6468764139/SBI CARDS,35914.0,withdrawal,high,Expense (Debt Payment),sudden_increase
+2018-09-01,IBBILLPAYDR-HDFCPE-545964XXXXXX3563,4987.0,withdrawal,high,Expense (Other),sudden_increase
+2018-09-10,NHDF6669071973/SBICARDS,3372.0,withdrawal,high,Expense (Other),sudden_increase
+2018-10-04,IBBILLPAYDR-HDFCPE-545964XXXXXX3563,3348.0,withdrawal,high,Expense (Other),sudden_increase
+2016-05-25,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,deposit,moderate,Income (Other),statistical
+2016-05-25,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,22000.0,deposit,moderate,Income (Other),statistical
+2016-08-24,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,deposit,moderate,Income (Other),statistical
+2016-08-24,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,22000.0,deposit,moderate,Income (Other),statistical
+2018-06-02,GM1TSA/MY0326/19,21870.01,deposit,moderate,Income (Other),statistical
+2018-07-09,CASH DEP MIRA ROAD -,22500.0,deposit,moderate,Income (Other),statistical
+2018-07-09,CASHDEPMIRAROAD-,22500.0,deposit,moderate,Income (Other),statistical
+2016-01-12,05301050057021 -TPT-BINAY_2000,1900.0,deposit,high,Income (Other),sudden_increase
+2016-01-19,05301050053402 -TPT-FUND TRANSFER,10000.0,deposit,high,Income (Other),sudden_increase
+2016-02-26,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,3000.0,deposit,high,Income (Other),sudden_increase
+2016-03-09,05301050057021 -TPT-TRANSFER,2000.0,deposit,high,Income (Other),sudden_increase
+2016-03-11,IMPS-P2A-607115555786-919007318609-INETI,13000.0,deposit,high,Income (Other),sudden_increase
+2016-03-24,NEFTCR-SBIN0003907-MR BINAYKUMARSHAW,2500.0,deposit,high,Income (Other),sudden_increase
+2016-04-18,CASHDEPCHAPRA,9000.0,deposit,high,Income (Other),sudden_increase
+2016-05-26,NEFT CR-SBIN0014517-MR BINAY KUMAR SHAW,4000.0,deposit,high,Income (Other),sudden_increase
+2016-07-05,NEFTCR-SBIN0003907-MR BINAYKUMARSHAW,9500.0,deposit,high,Income (Other),sudden_increase
+2016-07-21,FT - CR - 50200017844273 - AMBA ROADWAYS,3950.0,deposit,high,Income (Other),sudden_increase
+2016-08-03,05301050057021 -TPT-RAJ 1600,1800.0,deposit,high,Income (Other),sudden_increase
+2016-08-24,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,22000.0,deposit,high,Income (Other),sudden_increase
+2016-08-31,NEFTCR-SBIN0014517-MR BINAYKUMARSHAW,4000.0,deposit,high,Income (Other),sudden_increase
+2016-09-09,50100027640512 -TPT-LOANAMOUNT,4999.0,deposit,high,Income (Other),sudden_increase
+2016-09-09,50100074457140 -TPT-LOAN,5000.0,deposit,high,Income (Other),sudden_increase
+2018-06-02,GM1TSA/MY0326/19,21870.01,deposit,high,Income (Other),sudden_increase
+2018-07-02,MICROATMCASHDEP-HDFC,10000.0,deposit,high,Income (Other),sudden_increase
+2018-07-05,GM1TSA/JU0363/19,13288.0,deposit,high,Income (Other),sudden_increase
+2018-07-05,GM1TSA/JU0363/19,13288.0,deposit,high,Income (Other),sudden_increase
+2018-07-09,CASH DEP MIRA ROAD -,22500.0,deposit,high,Income (Other),sudden_increase
+2018-09-01,FT-CR-00030340017385-INDIABULLSHO,15230.39,deposit,high,Income (Other),sudden_increase
+2018-10-03,CASH DEP MIRA ROAD -,6800.0,deposit,high,Income (Other),sudden_increase
+2016-10-10,Unusual gap after this transaction (600.0 days),0.0,gap,moderate,timing_anomaly,timing_gap
