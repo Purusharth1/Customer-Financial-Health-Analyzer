@@ -174,10 +174,12 @@ def financial_analysis_pipeline(
     """Orchestrate financial analysis tasks.
 
     Args:
+    ----
         input_model: Configuration for the pipeline,
         including input directory and NLP query.
 
     Returns:
+    -------
         Dictionary with task results.
 
     """

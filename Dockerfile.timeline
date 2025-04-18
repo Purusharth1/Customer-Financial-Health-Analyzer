@@ -19,10 +19,10 @@ RUN mkdir -p /app/logs/mlruns
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8080
+ENV PORT=8082
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8082
 
 # Start FastAPI with Uvicorn
-CMD ["uv", "run", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uv", "run", "uvicorn", "src.timeline_api:app", "--host", "0.0.0.0", "--port", "8082"]
