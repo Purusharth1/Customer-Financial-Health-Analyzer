@@ -38,6 +38,39 @@ stop-all:
     pkill -f "streamlit run app.py"
     echo "Services stopped."
 
+# Docker commands
+docker-build:
+    docker-compose build
+
+docker-up:
+    docker-compose up -d
+
+docker-down:
+    docker-compose down
+
+docker-logs:
+    docker-compose logs -f
+
+docker-restart:
+    docker-compose restart
+
+# Docker test endpoints
+test-pdf-parser:
+    curl -X POST -F "file=@data/input/statement2.pdf" http://localhost:8080/parse_pdf
+
+test-timeline:
+    curl -X POST -F "file=@data/output/all_transactions.csv" http://localhost:8082/build_timeline
+
+# Docker test all services in sequence
+test-all-services: docker-up
+    #!/bin/bash
+    echo "Testing all services..."
+    sleep 5  # Wait for services to initialize
+    just test-pdf-parser
+    sleep 2
+    just test-timeline
+    echo "All services tested."
+
 # Serve MkDocs documentation
 docs-serve:
     uv run mkdocs serve --config-file project_docs/mkdocs.yml
