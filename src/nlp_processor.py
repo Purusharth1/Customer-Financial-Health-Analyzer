@@ -9,7 +9,7 @@ import json
 import logging
 import re
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import mlflow
@@ -32,32 +32,48 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Constants
 TIMEOUT_SECONDS = 30
+MIN_KEYWORD_LENGTH = 3
+RECENT_QUERIES_LIMIT = 10
+RECENT_QUERIES_CONTEXT = 3
+DEFAULT_TIMEFRAME_MONTHS = 3
+EMPTY_CSV_MESSAGE = "Empty CSV"
+TRANSACTION_LIMIT = 5
+BATCH_TOP_NARRATIONS = 2
 
 class FinancialMemory:
-    def __init__(self, persist_path: str = "data/state/financial_memory.json"):
-        self.queries: List[QueryRecord] = []
-        self.context: Dict[str, str] = {}
+    """Manages financial memory state with query history and context."""
+
+    def __init__(self, persist_path: str = "data/state/financial_memory.json") -> None:
+        """Initialize FinancialMemory with a persistent storage path."""
+        self.queries: list[QueryRecord] = []
+        self.context: dict[str, str] = {}
         self.persist_path = persist_path
         if Path(persist_path).exists():
             self._load()
 
     def add_query(self, query: str, result: str) -> None:
-        self.queries.append(QueryRecord(
-            query=query,
-            result=result,
-            timestamp=datetime.now().isoformat(),
-        ))
-        self.queries = self.queries[-10:]
+        """Add a query and its result to memory, keeping the most recent ones."""
+        self.queries.append(
+            QueryRecord(
+                query=query,
+                result=result,
+                timestamp=datetime.now(UTC).isoformat(),
+            ),
+        )
+        self.queries = self.queries[-RECENT_QUERIES_LIMIT:]
         self._save()
 
     def add_context(self, key: str, value: str) -> None:
+        """Add or update context information in memory."""
         self.context[key] = value
         self._save()
 
     def get_context(self) -> str:
+        """Retrieve recent queries and context as a formatted string."""
         context = "Recent queries:\n"
-        for q in self.queries[-3:]:
+        for q in self.queries[-RECENT_QUERIES_CONTEXT:]:
             context += f"- Q: {q.query}\n  A: {q.result}\n"
         if self.context:
             context += "Known info:\n"
@@ -66,41 +82,52 @@ class FinancialMemory:
         return context
 
     def _save(self) -> None:
+        """Save memory state to a JSON file."""
         try:
             state = FinancialMemoryState(queries=self.queries, context=self.context)
             Path(self.persist_path).parent.mkdir(parents=True, exist_ok=True)
             with Path(self.persist_path).open("w") as f:
                 json.dump(state.dict(), f)
-        except Exception as e:
-            logger.error(f"Failed to save memory: {e}")
+        except (OSError, json.JSONEncodeError):
+            logger.exception("Failed to save memory")
 
     def _load(self) -> None:
+        """Load memory state from a JSON file."""
         try:
             with Path(self.persist_path).open() as f:
                 state_data = json.load(f)
             state = FinancialMemoryState(**state_data)
             self.queries = state.queries
             self.context = state.context
-        except Exception as e:
-            logger.error(f"Failed to load memory: {e}")
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.exception("Failed to load memory")
+
 
 class QueryProcessor:
-    def __init__(self, df: pd.DataFrame, llm_config: dict):
-        self.df = df.copy() if not df.empty else df
+    """Processes NLP queries on financial transaction data."""
+
+    def __init__(self, transactions_df: pd.DataFrame, llm_config: dict) -> None:
+        """Initialize QueryProcessor with transaction data and LLM config."""
+        self.df = (
+            transactions_df.copy()
+            if not transactions_df.empty
+            else transactions_df
+        )
         self.llm_config = llm_config
         self.memory = FinancialMemory()
         self.df["parsed_date"] = pd.to_datetime(self.df["parsed_date"], errors="coerce")
-        if df.empty:
+        if transactions_df.empty:
             logger.warning("Transaction DataFrame is empty")
 
     def _filter_by_time(self, query: str) -> pd.DataFrame:
+        """Filter transactions by time period specified in the query."""
         query = query.lower()
-        now = datetime.now()
+        now = datetime.now(UTC)
         try:
             if "2016" in query:
                 logger.info("Filtering for year: 2016")
-                start = datetime(2016, 1, 1)
-                end = datetime(2016, 12, 31)
+                start = datetime(2016, 1, 1, tzinfo=UTC)
+                end = datetime(2016, 12, 31, tzinfo=UTC)
             elif "last month" in query:
                 start = (now.replace(day=1) - pd.offsets.MonthBegin(1)).replace(day=1)
                 end = now.replace(day=1) - pd.offsets.Day(1)
@@ -108,193 +135,298 @@ class QueryProcessor:
                 start = now.replace(day=1)
                 end = now
             elif "last year" in query:
-                start = datetime(now.year - 1, 1, 1)
-                end = datetime(now.year - 1, 12, 31)
+                start = datetime(now.year - 1, 1, 1, tzinfo=UTC)
+                end = datetime(now.year - 1, 12, 31, tzinfo=UTC)
             else:
-                start = now - pd.offsets.MonthBegin(3)
+                start = now - pd.offsets.MonthBegin(DEFAULT_TIMEFRAME_MONTHS)
                 end = now
-            filtered = self.df[(self.df["parsed_date"] >= start) & (self.df["parsed_date"] <= end)]
-            logger.info(f"Filtered {len(filtered)} transactions for {start} to {end}")
-            return filtered
-        except Exception as e:
-            logger.error(f"Time filter error: {e}")
+            filtered = self.df[
+                (self.df["parsed_date"] >= start) & (self.df["parsed_date"] <= end)
+            ]
+            logger.info(
+                "Filtered %d transactions for %s to %s",
+                len(filtered),
+                start,
+                end,
+            )
+        except (ValueError, TypeError):
+            logger.exception("Time filter error")
             return self.df
+        else:
+            return filtered
 
     def search(self, query: str) -> pd.DataFrame:
-        keywords = [word for word in query.lower().split() if len(word) > 2]
+        """Search transactions by keywords in narration or category."""
+        keywords = [
+            word
+            for word in query.lower().split()
+            if len(word) > MIN_KEYWORD_LENGTH
+        ]
         if not keywords:
             logger.debug("No valid keywords")
             return pd.DataFrame()
-        mask = pd.Series(False, index=self.df.index)
+        mask = pd.Series(data=False, index=self.df.index)
         for col in ["Narration", "category"]:
             for kw in keywords:
-                mask |= self.df[col].str.lower().str.contains(re.escape(kw), na=False)
+                mask |= self.df[col].str.lower().str.contains(
+                    re.escape(kw), na=False,
+                )
         matches = self.df[mask]
-        logger.info(f"Found {len(matches)} matches for query: {query}")
+        logger.info("Found %d matches for query: %s", len(matches), query)
         return matches
 
-    def process_query(self, query: str) -> NlpProcessorOutput:
-        query_lower = query.lower()
-        if any(term in query_lower for term in ["search", "find", "show me"]):
-            matches = self.search(query)
-            if matches.empty:
-                response = "No matching transactions found."
-                logger.debug(f"No matches for search query: {query}")
-            else:
-                transactions = matches[["parsed_date", "Narration", "Withdrawal (INR)", "category"]].head(5).to_dict("records")
-                response = f"Found {len(matches)} transaction{'s' if len(matches) > 1 else ''}: {json.dumps(transactions, default=str)}"
-            self.memory.add_query(query, response)
-            return NlpProcessorOutput(text_response=response)
+    def _process_search_query(self, query: str) -> NlpProcessorOutput:
+        """Handle search-related queries (e.g., 'search', 'find', 'show me')."""
+        matches = self.search(query)
+        if matches.empty:
+            response = "No matching transactions found."
+            logger.debug("No matches for search query: %s", query)
+        else:
+            transactions = (
+                matches[
+                    ["parsed_date", "Narration", "Withdrawal (INR)", "category"]
+                ]
+                .head(TRANSACTION_LIMIT)
+                .to_dict("records")
+            )
+            response = (
+                f"Found {len(matches)} transaction{'s' if len(matches) > 1 else ''}: "
+                f"{json.dumps(transactions, default=str)}"
+            )
+        self.memory.add_query(query, response)
+        return NlpProcessorOutput(text_response=response)
 
-        if any(term in query_lower for term in ["how much did i", "when did i", "did i buy"]):
-            matches = self.search(query)
-            context = self.memory.get_context()
-            if "how much" in query_lower:
-                item = query_lower.split("on")[-1].strip() if "on" in query_lower else query_lower.split()[-1]
-                if not matches.empty:
-                    total = matches["Withdrawal (INR)"].sum()
-                    response = f"You spent ₹{total:.2f} on {item}."
-                    self.memory.add_context(f"{item}_purchase", response)
-                else:
-                    response = f"No record of {item} purchase."
-                    logger.debug(f"No purchase found for {item}")
-            elif "when did i" in query_lower:
-                place = query_lower.split("to")[-1].strip() if "to" in query_lower else query_lower.split()[-1]
-                if not matches.empty:
-                    date = matches["parsed_date"].min().strftime("%Y-%m-%d")
-                    response = f"You went to {place} around {date}."
-                    self.memory.add_context(f"{place}_visit", response)
-                else:
-                    response = f"No record of visiting {place}."
-                    logger.debug(f"No visit found for {place}")
-            else:
-                prompt = f"Answer based on context:\n{context}\nQuery: {query}\nKeep it short."
-                response = query_llm(prompt, self.llm_config, timeout=TIMEOUT_SECONDS).strip()
-            self.memory.add_query(query, response)
-            return NlpProcessorOutput(text_response=response)
+    def _process_purchase_query(
+        self, query: str, query_lower: str,
+    ) -> NlpProcessorOutput:
+        """Handle purchase-related queries (e.g., 'how much did I spend')."""
+        matches = self.search(query)
+        item = (
+            query_lower.split("on")[-1].strip()
+            if "on" in query_lower
+            else query_lower.split()[-1]
+        )
+        if not matches.empty:
+            total = matches["Withdrawal (INR)"].sum()
+            response = f"You spent ₹{total:.2f} on {item}."
+            self.memory.add_context(f"{item}_purchase", response)
+        else:
+            response = f"No record of {item} purchase."
+            logger.debug("No purchase found for %s", item)
+        self.memory.add_query(query, response)
+        return NlpProcessorOutput(text_response=response)
 
-        time_df = self._filter_by_time(query)
-        if time_df.empty:
-            response = "No transactions found for this period."
-            logger.warning(f"Empty time-filtered data for query: {query}")
-            self.memory.add_query(query, response)
-            return NlpProcessorOutput(text_response=response)
+    def _process_visit_query(self, query: str, query_lower: str) -> NlpProcessorOutput:
+        """Handle visit-related queries (e.g., 'when did I go to')."""
+        matches = self.search(query)
+        place = (
+            query_lower.split("to")[-1].strip()
+            if "to" in query_lower
+            else query_lower.split()[-1]
+        )
+        if not matches.empty:
+            date = matches["parsed_date"].min().strftime("%Y-%m-%d")
+            response = f"You went to {place} around {date}."
+            self.memory.add_context(f"{place}_visit", response)
+        else:
+            response = f"No record of visiting {place}."
+            logger.debug("No visit found for %s", place)
+        self.memory.add_query(query, response)
+        return NlpProcessorOutput(text_response=response)
 
-        category = None
+    def _process_fallback_query(self, query: str) -> NlpProcessorOutput:
+        """Handle generic queries using LLM with context."""
+        context = self.memory.get_context()
+        prompt = f"Answer based on context:\n{context}\nQuery: {query}\nKeep it short."
+        response = query_llm(
+            prompt, self.llm_config, timeout=TIMEOUT_SECONDS,
+        ).strip()
+        self.memory.add_query(query, response)
+        return NlpProcessorOutput(text_response=response)
+
+    def _extract_category(self, query_lower: str, time_df: pd.DataFrame) -> str | None:
+        """Extract a category from the query based on transaction data."""
         possible_categories = time_df["category"].unique()
         for cat in possible_categories:
             if cat.lower() in query_lower:
-                category = cat
-                break
-        if not category and "expense" in query_lower:
-            expense_part = query_lower.split("expense")[-1].strip().split("in")[0].strip()
+                return cat
+        if "expense" in query_lower:
+            expense_part = query_lower.split("expense")[-1].strip()
+            expense_part = expense_part.split("in")[0].strip()
             for cat in possible_categories:
                 if expense_part in cat.lower():
-                    category = cat
-                    break
+                    return cat
+        for word in reversed(query_lower.split()):
+            if word in time_df["Narration"].str.lower().to_numpy():
+                return word
+        return None
+
+    def _generate_visualization(
+        self, matches: pd.DataFrame, category: str, period: str,
+    ) -> VisualizationData | None:
+        """Generate bar chart data for transactions if applicable."""
+        if len(matches) <= 1:
+            return None
+        bar_data = (
+            matches.groupby(matches["parsed_date"].dt.strftime("%Y-%m-%d"))[
+                "Withdrawal (INR)"
+            ]
+            .sum()
+            .reset_index()
+        )
+        viz_data = VisualizationData(
+            type="bar",
+            data=bar_data[["parsed_date", "Withdrawal (INR)"]].to_numpy().tolist(),
+            columns=["Date", "Amount (INR)"],
+            title=f"{category} Spending in {period}",
+        )
+        logger.info("Generated visualization for %s", category)
+        return viz_data
+
+    def _process_category_query(
+        self, query_lower: str, time_df: pd.DataFrame,
+    ) -> NlpProcessorOutput:
+        """Handle queries involving transaction categories."""
+        category = self._extract_category(query_lower, time_df)
         if not category:
-            words = query_lower.split()
-            for word in reversed(words):
-                if word in time_df["Narration"].str.lower().values:
-                    category = word
-                    break
-        if not category:
-            response = "Couldn’t identify a category."
-            logger.debug(f"No category matched in query: {query}")
-            self.memory.add_query(query, response)
+            response = "Could not identify a category."
+            logger.debug("No category matched in query: %s", query_lower)
+            self.memory.add_query(query_lower, response)
             return NlpProcessorOutput(text_response=response)
 
         matches = time_df[
-            time_df["category"].str.lower().str.contains(re.escape(category.lower()), na=False) |
-            time_df["Narration"].str.lower().str.contains(re.escape(category.lower()), na=False)
+            time_df["category"]
+            .str.lower()
+            .str.contains(re.escape(category.lower()), na=False)
+            | time_df["Narration"]
+            .str.lower()
+            .str.contains(re.escape(category.lower()), na=False)
         ]
         if matches.empty:
             response = f"No {category} transactions found."
-            logger.info(f"No matches for category '{category}'")
-            self.memory.add_query(query, response)
+            logger.info("No matches for category '%s'", category)
+            self.memory.add_query(query_lower, response)
             return NlpProcessorOutput(text_response=response)
 
         total = matches["Withdrawal (INR)"].sum()
         count = len(matches)
-        period = query_lower.split("in")[-1].strip() if "in" in query_lower else "the period"
+        period = (
+            query_lower.split("in")[-1].strip()
+            if "in" in query_lower
+            else "the period"
+        )
         if "summary" in query_lower:
-            top_narrations = matches["Narration"].value_counts().head(2).index.tolist()
-            response = f"In {period}, you spent ₹{total:.2f} on {category} across {count} transaction{'s' if count > 1 else ''}. Common transactions: {', '.join(top_narrations)}."
-        else:
-            response = f"You spent ₹{total:.2f} on {category} in {period} across {count} transaction{'s' if count > 1 else ''}."
-
-        viz_data = None
-        if count > 1:
-            bar_data = matches.groupby(matches["parsed_date"].dt.strftime("%Y-%m-%d"))["Withdrawal (INR)"].sum().reset_index()
-            viz_data = VisualizationData(
-                type="bar",
-                data=bar_data[["parsed_date", "Withdrawal (INR)"]].values.tolist(),
-                columns=["Date", "Amount (INR)"],
-                title=f"{category} Spending in {period}",
+            top_narrations = (
+                matches["Narration"]
+                .value_counts()
+                .head(BATCH_TOP_NARRATIONS)
+                .index.tolist()
             )
-            logger.info(f"Generated visualization for {category}")
+            response = (
+                f"In {period}, you spent ₹{total:.2f} on {category} across "
+                f"{count} transaction{'s' if count > 1 else ''}. "
+                f"Common transactions: {', '.join(top_narrations)}."
+            )
+        else:
+            response = (
+                f"You spent ₹{total:.2f} on {category} in {period} across "
+                f"{count} transaction{'s' if count > 1 else ''}."
+            )
 
-        self.memory.add_query(query, response)
+        viz_data = self._generate_visualization(matches, category, period)
+        self.memory.add_query(query_lower, response)
         return NlpProcessorOutput(text_response=response, visualization=viz_data)
 
+    def process_query(self, query: str) -> NlpProcessorOutput:
+        """Process a financial query with optional visualization."""
+        query_lower = query.lower()
+        if any(term in query_lower for term in ["search", "find", "show me"]):
+            return self._process_search_query(query)
+
+        if any(
+            term in query_lower
+            for term in ["how much did i", "when did i", "did i buy"]
+        ):
+            if "how much" in query_lower:
+                return self._process_purchase_query(query, query_lower)
+            if "when did i" in query_lower:
+                return self._process_visit_query(query, query_lower)
+            return self._process_fallback_query(query)
+
+        time_df = self._filter_by_time(query)
+        if time_df.empty:
+            response = "No transactions found for this period."
+            logger.warning("Empty time-filtered data for query: %s", query)
+            self.memory.add_query(query, response)
+            return NlpProcessorOutput(text_response=response)
+
+        return self._process_category_query(query_lower, time_df)
+
+
+def _raise_empty_csv_error() -> None:
+    """Raise ValueError for empty CSV with a predefined message."""
+    error_msg = EMPTY_CSV_MESSAGE
+    raise ValueError(error_msg)
+
+
 def process_nlp_queries(input_model: NlpProcessorInput) -> NlpProcessorOutput:
-    """Process NLP queries."""
+    """Process NLP queries and save results to output files."""
     setup_mlflow()
     llm_config = get_llm_config()
-    logger.info(f"Processing query: {input_model.query}")
+    logger.info("Processing query: %s", input_model.query)
 
     with mlflow.start_run(run_name="NLP_Query"):
         mlflow.log_param("input_csv", str(input_model.input_csv))
         mlflow.log_param("query", input_model.query)
 
         try:
-            df = pd.read_csv(input_model.input_csv)
-            if df.empty:
-                raise ValueError("Empty CSV")
-        except Exception as e:
+            transactions_df = pd.read_csv(input_model.input_csv)
+            if transactions_df.empty:
+                _raise_empty_csv_error()
+        except (FileNotFoundError, pd.errors.EmptyDataError, ValueError) as e:
             error_msg = f"Failed to load CSV: {e}"
-            logger.error(error_msg)
+            logger.exception(error_msg)
             input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
             with input_model.output_file.open("w") as f:
                 f.write(error_msg)
             return NlpProcessorOutput(text_response=error_msg)
 
-        try:
-            processor = QueryProcessor(df, llm_config)
-            result = processor.process_query(input_model.query)
+        processor = QueryProcessor(transactions_df, llm_config)
+        result = processor.process_query(input_model.query)
 
-            input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
-            with input_model.output_file.open("w") as f:
-                f.write(result.text_response)
-            mlflow.log_artifact(str(input_model.output_file))
+        input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
+        with input_model.output_file.open("w") as f:
+            f.write(result.text_response)
+        mlflow.log_artifact(str(input_model.output_file))
 
-            if input_model.visualization_file and result.visualization:
-                input_model.visualization_file.parent.mkdir(parents=True, exist_ok=True)
-                with input_model.visualization_file.open("w") as f:
-                    json.dump(result.visualization.dict(), f)
-                mlflow.log_artifact(str(input_model.visualization_file))
-                logger.info(f"Saved visualization to {input_model.visualization_file}")
+        if input_model.visualization_file and result.visualization:
+            input_model.visualization_file.parent.mkdir(parents=True, exist_ok=True)
+            with input_model.visualization_file.open("w") as f:
+                json.dump(result.visualization.dict(), f)
+            mlflow.log_artifact(str(input_model.visualization_file))
+            logger.info(
+                "Saved visualization to %s",
+                input_model.visualization_file,
+            )
 
-            return result
+        return result
 
-        except Exception as e:
-            error_msg = f"Error processing query: {e}"
-            logger.error(error_msg)
-            input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
-            with input_model.output_file.open("w") as f:
-                f.write(error_msg)
-            return NlpProcessorOutput(text_response=error_msg)
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--query", default="give me a summary for Expense (Other) in 2016")
+    parser.add_argument(
+        "--query",
+        default="give me a summary for Expense (Other) in 2016",
+    )
     args = parser.parse_args()
     response = process_nlp_queries(
-        "data/output/categorized.csv",
-        args.query,
-        "data/output/nlp_response.txt",
-        "data/output/visualization_data.json",
+        NlpProcessorInput(
+            input_csv=Path("data/output/categorized.csv"),
+            query=args.query,
+            output_file=Path("data/output/nlp_response.txt"),
+            visualization_file=Path("data/output/visualization_data.json"),
+        ),
     )
-    print("\nQuery Response:")
-    print(response)
+    logger.info("Query Response: %s", response)

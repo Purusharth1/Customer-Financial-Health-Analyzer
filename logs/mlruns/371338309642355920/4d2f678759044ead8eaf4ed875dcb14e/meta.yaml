@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/4d2f678759044ead8eaf4ed875dcb14e/artifacts
+end_time: 1745000424200
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 4d2f678759044ead8eaf4ed875dcb14e
+run_name: adorable-grouse-309
+run_uuid: 4d2f678759044ead8eaf4ed875dcb14e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745000424190
+status: 3
+tags: []
+user_id: aditya

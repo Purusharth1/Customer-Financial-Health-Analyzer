@@ -29,19 +29,192 @@ from src.models import (
 )
 from src.utils import sanitize_metric_name, setup_mlflow
 
-# Create a custom logger
 logger = logging.getLogger(__name__)
 
+# Constants
+HIGH_SPENDING_MULTIPLIER = 1.5
+LOW_SPENDING_MULTIPLIER = 0.7
+WEEKEND_MULTIPLIER = 1.3
+MIN_MONTHS_FOR_TREND = 2
+WITHDRAWAL_THRESHOLD_MULTIPLIER = 0.2
+MIN_REPEAT_COUNT = 2
+MONTHLY_RANGE = (25, 35)
+WEEKLY_RANGE = (6, 8)
+BIWEEKLY_RANGE = (13, 16)
+QUARTERLY_RANGE = (85, 95)
+ANNUAL_RANGE = (355, 370)
+DAILY_WORKDAYS_THRESHOLD = 5
+HIGH_REGULARITY_THRESHOLD = 3
+MIN_OCCURRENCES = 3
+AMOUNT_VARIATION_THRESHOLD = 0.15
+MIN_DATA_POINTS = 5
+Z_SCORE_THRESHOLD = 3
+SPIKE_THRESHOLD = 5
+TIME_GAP_MULTIPLIER = 3
+START_MONTH_DAY = 10
+MID_MONTH_DAY = 20
+Z_SCORE_SEVERITY_THRESHOLD = 5
+
+def _load_and_validate_data(input_csv: Path, required_cols: list[str]) -> pd.DataFrame:
+    """Load and validate CSV data."""
+    start_time = pd.Timestamp.now()
+    try:
+        transactions_df = pd.read_csv(input_csv)
+        elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+        logger.info("Read CSV in %.3fs", elapsed)
+    except FileNotFoundError:
+        logger.exception("Input CSV not found: %s", input_csv)
+        return pd.DataFrame()
+    if transactions_df.empty:
+        logger.warning("Empty CSV: %s", input_csv)
+        return pd.DataFrame()
+    missing_cols = [col for col in required_cols if col not in transactions_df]
+    if missing_cols:
+        logger.error("Missing columns: %s", missing_cols)
+        return pd.DataFrame()
+    return transactions_df
+
+def _preprocess_data(transactions_df: pd.DataFrame) -> pd.DataFrame:
+    """Preprocess transaction data."""
+    start_time = pd.Timestamp.now()
+    transactions_df["parsed_date"] = pd.to_datetime(
+        transactions_df["parsed_date"], errors="coerce",
+    )
+    transactions_df["month"] = transactions_df["parsed_date"].dt.to_period("M")
+    transactions_df["weekday"] = transactions_df["parsed_date"].dt.weekday
+    transactions_df["is_weekend"] = transactions_df["weekday"].isin([5, 6])
+    transactions_df["day"] = transactions_df["parsed_date"].dt.day
+    transactions_df["time_of_month"] = transactions_df["day"].apply(
+        lambda x: "start" if x <= START_MONTH_DAY
+        else "middle" if x <= MID_MONTH_DAY
+        else "end",
+    )
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Preprocessed data in %.3fs", elapsed)
+    return transactions_df
+
+def _compute_account_overview(transactions_df: pd.DataFrame) -> AccountOverview:
+    """Compute account overview metrics."""
+    start_time = pd.Timestamp.now()
+    total_income = transactions_df["Deposit (INR)"].sum()
+    total_expense = transactions_df["Withdrawal (INR)"].sum()
+    total_balance = total_income - total_expense
+    latest_month = transactions_df["month"].max()
+    prev_month = latest_month - 1
+    latest_income = transactions_df[
+        transactions_df["month"] == latest_month
+    ]["Deposit (INR)"].sum()
+    latest_expense = transactions_df[
+        transactions_df["month"] == latest_month
+    ]["Withdrawal (INR)"].sum()
+    prev_income = transactions_df[
+        transactions_df["month"] == prev_month
+    ]["Deposit (INR)"].sum()
+    prev_expense = transactions_df[
+        transactions_df["month"] == prev_month
+    ]["Withdrawal (INR)"].sum()
+    prev_balance = prev_income - prev_expense
+
+    overview = AccountOverview(
+        total_balance=float(total_balance),
+        monthly_income=float(latest_income),
+        monthly_expense=float(latest_expense),
+        balance_percentage=float(
+            ((total_balance - prev_balance) / prev_balance * 100)
+            if prev_balance else 0,
+        ),
+        income_percentage=float(
+            ((latest_income - prev_income) / prev_income * 100)
+            if prev_income else 0,
+        ),
+        expense_percentage=float(
+            ((latest_expense - prev_expense) / prev_expense * 100)
+            if prev_expense else 0,
+        ),
+    )
+    mlflow.log_metrics({
+        "total_balance": total_balance,
+        "monthly_income": latest_income,
+        "monthly_expense": latest_expense,
+    })
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Computed account overview in %.3fs", elapsed)
+    return overview
+
+def _analyze_patterns(transactions_df: pd.DataFrame, output_dir: Path) -> list[Pattern]:
+    """Analyze spending patterns and save results."""
+    start_time = pd.Timestamp.now()
+    patterns = detect_patterns(transactions_df)
+    pattern_models = [Pattern(description=p) for p in patterns]
+    patterns_file = output_dir / "patterns.txt"
+    with patterns_file.open("w") as file:
+        file.write("\n".join(patterns))
+    mlflow.log_artifact(str(patterns_file))
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Detected patterns in %.3fs", elapsed)
+    return pattern_models
+
+def _analyze_fees(transactions_df: pd.DataFrame, output_dir: Path) -> list[Fee]:
+    """Analyze fees and save results."""
+    start_time = pd.Timestamp.now()
+    fees = detect_fees(transactions_df)
+    fee_models = [Fee(**f) for f in fees]
+    fees_file = output_dir / "fees.csv"
+    pd.DataFrame(fees).to_csv(fees_file, index=False)
+    mlflow.log_artifact(str(fees_file))
+    if not fees:
+        logger.warning("No fee transactions detected")
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Detected fees in %.3fs", elapsed)
+    return fee_models
+
+def _analyze_recurring(transactions_df: pd.DataFrame,
+                    output_dir: Path) -> list[Recurring]:
+    """Analyze recurring payments and save results."""
+    start_time = pd.Timestamp.now()
+    recurring = detect_recurring(transactions_df)
+    recurring_models = [Recurring(**r) for r in recurring]
+    recurring_file = output_dir / "recurring.csv"
+    pd.DataFrame(recurring).to_csv(recurring_file, index=False)
+    mlflow.log_artifact(str(recurring_file))
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Detected recurring payments in %.3fs", elapsed)
+    return recurring_models
+
+def _analyze_anomalies(transactions_df: pd.DataFrame,
+                       output_dir: Path) -> list[Anomaly]:
+    """Analyze anomalies and save results."""
+    start_time = pd.Timestamp.now()
+    anomalies = detect_anomalies(transactions_df)
+    anomalies_file = output_dir / "anomalies.csv"
+    pd.DataFrame([a.dict() for a in anomalies]).to_csv(anomalies_file, index=False)
+    mlflow.log_artifact(str(anomalies_file))
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Detected anomalies in %.3fs", elapsed)
+    return anomalies
+
+def _analyze_cash_flow(transactions_df: pd.DataFrame,
+                       output_dir: Path) -> list[CashFlow]:
+    """Analyze cash flow and save results."""
+    start_time = pd.Timestamp.now()
+    cash_flow = analyze_cash_flow(transactions_df)
+    cash_flow_models = [CashFlow(**c) for c in cash_flow]
+    cash_flow_file = output_dir / "cash_flow.csv"
+    pd.DataFrame(cash_flow).to_csv(cash_flow_file, index=False)
+    mlflow.log_artifact(str(cash_flow_file))
+    elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+    logger.info("Analyzed cash flow in %.3fs", elapsed)
+    return cash_flow_models
 
 def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
-    """Analyze transactions for patterns, fees, recurring payments, anomalies, and account overview.
+    """Analyze transactions to identify financial patterns and metrics.
 
     Args:
-        input_csv: Path to categorized transactions CSV.
-        output_dir: Directory to save analysis outputs.
+        input_model: Input configuration with transaction CSV path and output directory.
 
     Returns:
-        Dictionary with patterns, fees, recurring, anomalies, cash flow, and account overview.
+        Analysis results including patterns, fees, recurring payments, anomalies,
+        and cash flow.
 
     """
     setup_mlflow()
@@ -66,240 +239,180 @@ def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
     )
 
     with mlflow.start_run(run_name="Transaction_Analysis"):
-        mlflow.log_param("input_csv", input_csv)
+        mlflow.log_param("input_csv", str(input_csv))
         start_time = pd.Timestamp.now()
-        try:
-            df = pd.read_csv(input_csv)
-            logger.info(f"Read CSV: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
-        except FileNotFoundError:
-            logger.exception("Input CSV not found: %s", input_csv)
-            return results
-        if df.empty:
-            logger.warning(f"Empty CSV: {input_csv}")
-            return results
-        mlflow.log_metric("transactions_analyzed", len(df))
 
-        # Validate columns
-        required = ["parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category"]
-        if not all(col in df for col in required):
-            missing = [col for col in required if col not in df]
-            logger.error("Missing columns: %s", missing)
+        required_cols = [
+            "parsed_date", "Narration", "Withdrawal (INR)",
+            "Deposit (INR)", "category",
+        ]
+        transactions_df = _load_and_validate_data(input_csv, required_cols)
+        if transactions_df.empty:
             return results
 
-        # Preprocess
-        t = pd.Timestamp.now()
-        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
-        df["month"] = df["parsed_date"].dt.to_period("M")
-        df["weekday"] = df["parsed_date"].dt.weekday
-        df["is_weekend"] = df["weekday"].isin([5, 6])
-        df["day"] = df["parsed_date"].dt.day
-        df["time_of_month"] = df["day"].apply(
-            lambda x: "start" if x <= 10 else "middle" if x <= 20 else "end",
-        )
-        logger.info(f"Preprocess: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
+        mlflow.log_metric("transactions_analyzed", len(transactions_df))
+        transactions_df = _preprocess_data(transactions_df)
+        results.account_overview = _compute_account_overview(transactions_df)
+        results.patterns = _analyze_patterns(transactions_df, output_dir)
+        results.fees = _analyze_fees(transactions_df, output_dir)
+        results.recurring = _analyze_recurring(transactions_df, output_dir)
+        results.anomalies = _analyze_anomalies(transactions_df, output_dir)
+        results.cash_flow = _analyze_cash_flow(transactions_df, output_dir)
 
-        # Account Overview
-        t = pd.Timestamp.now()
-        total_income = df["Deposit (INR)"].sum()
-        total_expense = df["Withdrawal (INR)"].sum()
-        total_balance = total_income - total_expense
-        latest_month = df["month"].max()
-        prev_month = latest_month - 1
-        latest_income = df[df["month"] == latest_month]["Deposit (INR)"].sum()
-        latest_expense = df[df["month"] == latest_month]["Withdrawal (INR)"].sum()
-        prev_income = df[df["month"] == prev_month]["Deposit (INR)"].sum()
-        prev_expense = df[df["month"] == prev_month]["Withdrawal (INR)"].sum()
-        prev_balance = prev_income - prev_expense
-
-        # Using the Pydantic model directly
-        results.account_overview = AccountOverview(
-            total_balance=float(total_balance),
-            monthly_income=float(latest_income),
-            monthly_expense=float(latest_expense),
-            balance_percentage=float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
-            income_percentage=float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
-            expense_percentage=float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
-        )
-
+        # Log counts
         mlflow.log_metrics({
-            "total_balance": total_balance,
-            "monthly_income": latest_income,
-            "monthly_expense": latest_expense,
+            sanitize_metric_name("patterns_count"): len(results.patterns),
+            sanitize_metric_name("fees_count"): len(results.fees),
+            sanitize_metric_name("recurring_count"): len(results.recurring),
+            sanitize_metric_name("anomalies_count"): len(results.anomalies),
+            sanitize_metric_name("cash_flow_count"): len(results.cash_flow),
         })
-        logger.info(f"Account Overview: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Patterns
-        t = pd.Timestamp.now()
-        patterns = detect_patterns(df)
-        results.patterns = [Pattern(description=p) for p in patterns]
-        patterns_file = Path(output_dir) / "patterns.txt"
-        with patterns_file.open("w") as file:
-            file.write("\n".join(patterns))
-        mlflow.log_artifact(str(patterns_file))
-        logger.info(f"Patterns: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Fees
-        t = pd.Timestamp.now()
-        fees = detect_fees(df)
-        results.fees = [Fee(**f) for f in fees]
-        fees_file = Path(output_dir) / "fees.csv"
-        pd.DataFrame(fees).to_csv(fees_file, index=False)
-        mlflow.log_artifact(str(fees_file))
-        if not fees:
-            logger.warning("No fee transactions detected")
-        logger.info(f"Fees: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Recurring Payments
-        t = pd.Timestamp.now()
-        recurring = detect_recurring(df)
-        results.recurring = [Recurring(**r) for r in recurring]
-        recurring_file = Path(output_dir) / "recurring.csv"
-        pd.DataFrame(recurring).to_csv(recurring_file, index=False)
-        mlflow.log_artifact(str(recurring_file))
-        logger.info(f"Recurring: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Anomalies
-        t = pd.Timestamp.now()
-        anomalies = detect_anomalies(df)
-        results.anomalies = [Anomaly(**a) for a in anomalies]
-        anomalies_file = Path(output_dir) / "anomalies.csv"
-        pd.DataFrame(anomalies).to_csv(anomalies_file, index=False)
-        mlflow.log_artifact(str(anomalies_file))
-        logger.info(f"Anomalies: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Cash Flow
-        t = pd.Timestamp.now()
-        cash_flow = analyze_cash_flow(df)
-        results.cash_flow = [CashFlow(**c) for c in cash_flow]
-        cash_flow_file = Path(output_dir) / "cash_flow.csv"
-        pd.DataFrame(cash_flow).to_csv(cash_flow_file, index=False)
-        mlflow.log_artifact(str(cash_flow_file))
-        logger.info(f"Cash Flow: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Log counts - updated to use Pydantic model attributes
-        mlflow.log_metric(sanitize_metric_name("patterns_count"), len(results.patterns))
-        mlflow.log_metric(sanitize_metric_name("fees_count"), len(results.fees))
-        mlflow.log_metric(sanitize_metric_name("recurring_count"), len(results.recurring))
-        mlflow.log_metric(sanitize_metric_name("anomalies_count"), len(results.anomalies))
-        mlflow.log_metric(sanitize_metric_name("cash_flow_count"), len(results.cash_flow))
 
         # Log account overview metrics
-        account_dict = results.account_overview.dict()
-        for subkey, value in account_dict.items():
+        for subkey, value in results.account_overview.dict().items():
             mlflow.log_metric(sanitize_metric_name(f"account_{subkey}"), value)
 
-        logger.info(f"Total analysis: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
+        total_elapsed = (pd.Timestamp.now() - start_time).total_seconds()
+        logger.info("Completed analysis in %.3fs", total_elapsed)
         return results
 
-# Constants
-HIGH_SPENDING_MULTIPLIER = 1.5
-LOW_SPENDING_MULTIPLIER = 0.7
-WEEKEND_MULTIPLIER = 1.3
-MIN_MONTHS_FOR_TREND = 2
-
-def detect_patterns(df: pd.DataFrame) -> list[str]:
+def detect_patterns(transactions_df: pd.DataFrame) -> list[str]:
     """Identify spending patterns using rule-based logic."""
     logger.info("Detecting spending patterns")
     patterns = []
-
-    if df.empty or df["parsed_date"].isna().all():
+    if transactions_df.empty or transactions_df["parsed_date"].isna().all():
         logger.warning("No valid data for patterns")
         return ["No patterns detected"]
 
     # Category dominance
-    cat_totals = df.groupby("category")["Withdrawal (INR)"].sum()
+    cat_totals = transactions_df.groupby("category")["Withdrawal (INR)"].sum()
     if not cat_totals.empty:
         top_cat = cat_totals.idxmax()
         if cat_totals[top_cat] > cat_totals.mean() * HIGH_SPENDING_MULTIPLIER:
-            patterns.append(f"High {top_cat} spending (₹{cat_totals[top_cat]:.2f})")
+            patterns.append(
+                f"High {top_cat} spending (₹{cat_totals[top_cat]:.2f})",
+            )
 
     # Monthly trends
-    monthly_totals = df.groupby("month")["Withdrawal (INR)"].sum()
+    monthly_totals = transactions_df.groupby("month")["Withdrawal (INR)"].sum()
     if len(monthly_totals) > MIN_MONTHS_FOR_TREND:
         max_month = monthly_totals.idxmax()
         min_month = monthly_totals.idxmin()
         if monthly_totals[max_month] > monthly_totals.mean() * HIGH_SPENDING_MULTIPLIER:
-            patterns.append(f"Higher spending in {max_month} (₹{monthly_totals[max_month]:.2f})")
+            patterns.append(
+                f"Higher spending in {max_month} (₹{monthly_totals[max_month]:.2f})",
+            )
         if monthly_totals[min_month] < monthly_totals.mean() * LOW_SPENDING_MULTIPLIER:
-            patterns.append(f"Lower spending in {min_month} (₹{monthly_totals[min_month]:.2f})")
+            patterns.append(
+                f"Lower spending in {min_month} (₹{monthly_totals[min_month]:.2f})",
+            )
 
     # Weekend vs weekday
-    weekend_spending = df[df["is_weekend"]]["Withdrawal (INR)"].sum() / df["is_weekend"].sum()
-    weekday_spending = df[~df["is_weekend"]]["Withdrawal (INR)"].sum() / (~df["is_weekend"]).sum()
+    weekend_mask = transactions_df["is_weekend"]
+    weekend_sum = transactions_df[weekend_mask]["Withdrawal (INR)"].sum()
+    weekend_count = weekend_mask.sum()
+    weekday_sum = transactions_df[~weekend_mask]["Withdrawal (INR)"].sum()
+    weekday_count = (~weekend_mask).sum()
+    weekend_spending = weekend_sum / weekend_count if weekend_count else 0
+    weekday_spending = weekday_sum / weekday_count if weekday_count else 0
     if weekend_spending > weekday_spending * WEEKEND_MULTIPLIER:
-        patterns.append(f"Higher weekend spending (₹{weekend_spending:.2f}/day) vs weekdays (₹{weekday_spending:.2f}/day)")
+        patterns.append(
+            f"Higher weekend spending (₹{weekend_spending:.2f}/day) vs "
+            f"weekdays (₹{weekday_spending:.2f}/day)",
+        )
     elif weekday_spending > weekend_spending * WEEKEND_MULTIPLIER:
-        patterns.append(f"Higher weekday spending (₹{weekday_spending:.2f}/day) vs weekends (₹{weekend_spending:.2f}/day)")
+        patterns.append(
+            f"Higher weekday spending (₹{weekday_spending:.2f}/day) vs "
+            f"weekends (₹{weekend_spending:.2f}/day)",
+        )
 
     return patterns if patterns else ["No patterns detected"]
 
-# Constants for fees
-WITHDRAWAL_THRESHOLD_MULTIPLIER = 0.2
-MIN_REPEAT_COUNT = 2
-
-def detect_fees(df: pd.DataFrame) -> list[dict]:
+def detect_fees(transactions_df: pd.DataFrame) -> list[dict]:
     """Identify fee or interest-related transactions."""
     keywords = [
         "FEE", "CHARGE", "INTEREST", "PENALTY", "TAX", "COMMISSION",
         "SERVICE CHARGE", "LATE FEE", "SURCHARGE", "GST",
         "MAINTENANCE", "AMC", "ANNUAL",
     ]
-    mask = df["Narration"].str.upper().str.contains("|".join(keywords), na=False)
-    fees = df[mask][["parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category"]].copy()
+    mask = transactions_df["Narration"].str.upper().str.contains(
+        "|".join(keywords), na=False,
+    )
+    fees_df = transactions_df[mask][[
+        "parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category",
+    ]].copy()
 
     # Small recurring fees
-    mean_withdrawal = df["Withdrawal (INR)"].mean()
+    mean_withdrawal = transactions_df["Withdrawal (INR)"].mean()
     potential_fee_mask = (
-        (df["Withdrawal (INR)"] > 0) &
-        (df["Withdrawal (INR)"] < mean_withdrawal * WITHDRAWAL_THRESHOLD_MULTIPLIER) &
+        (transactions_df["Withdrawal (INR)"] > 0) &
+        (transactions_df["Withdrawal (INR)"] <
+         mean_withdrawal * WITHDRAWAL_THRESHOLD_MULTIPLIER) &
         (~mask)
     )
-    potential_fees = df[potential_fee_mask]
+    potential_fees = transactions_df[potential_fee_mask]
     if not potential_fees.empty:
         amount_counts = potential_fees.groupby("Withdrawal (INR)").size()
         recurring_amounts = amount_counts[amount_counts >= MIN_REPEAT_COUNT].index
-        recurring_fees = potential_fees[potential_fees["Withdrawal (INR)"].isin(recurring_amounts)]
-        fees = pd.concat([fees, recurring_fees[["parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category"]]])
+        recurring_fees = potential_fees[
+            potential_fees["Withdrawal (INR)"].isin(recurring_amounts)
+        ]
+        fees_df = pd.concat([
+            fees_df,
+            recurring_fees[[
+                "parsed_date", "Narration", "Withdrawal (INR)",
+                "Deposit (INR)", "category",
+            ]],
+        ])
 
-    fees["amount"] = fees["Withdrawal (INR)"].where(fees["Withdrawal (INR)"] > 0, fees["Deposit (INR)"])
-    fees["type"] = fees["Withdrawal (INR)"].where(fees["Withdrawal (INR)"] > 0, 0).apply(lambda x: "withdrawal" if x > 0 else "deposit")
-    fees["fee_type"] = fees["Narration"].str.upper().apply(
-        lambda x: "interest" if "INTEREST" in x
-        else "tax" if any(w in x for w in ["TAX", "GST"])
-        else "annual" if any(w in x for w in ["ANNUAL", "AMC", "YEARLY"])
-        else "maintenance" if any(w in x for w in ["MAINTENANCE", "SERVICE"])
-        else "penalty" if any(w in x for w in ["LATE", "PENALTY"])
-        else "other",
+    fees_df["amount"] = fees_df["Withdrawal (INR)"].where(
+        fees_df["Withdrawal (INR)"] > 0, fees_df["Deposit (INR)"],
+    )
+    fees_df["type"] = fees_df["Withdrawal (INR)"].where(
+        fees_df["Withdrawal (INR)"] > 0, 0,
+    ).apply(lambda x: "withdrawal" if x > 0 else "deposit")
+    fees_df["fee_type"] = fees_df["Narration"].str.upper().apply(
+        lambda x: (
+            "interest" if "INTEREST" in x else
+            "tax" if any(w in x for w in ["TAX", "GST"]) else
+            "annual" if any(w in x for w in ["ANNUAL", "AMC", "YEARLY"]) else
+            "maintenance" if any(w in x for w in ["MAINTENANCE", "SERVICE"]) else
+            "penalty" if any(w in x for w in ["LATE", "PENALTY"]) else
+            "other"
+        ),
     )
 
-    return fees[["parsed_date", "Narration", "amount", "type", "fee_type", "category"]].to_dict("records")
+    return fees_df[[
+        "parsed_date", "Narration", "amount", "type", "fee_type", "category",
+    ]].to_dict("records")
 
-# Constants for recurring
-MONTHLY_RANGE = (25, 35)
-WEEKLY_RANGE = (6, 8)
-BIWEEKLY_RANGE = (13, 16)
-QUARTERLY_RANGE = (85, 95)
-ANNUAL_RANGE = (355, 370)
-DAILY_WORKDAYS_THRESHOLD = 5
-HIGH_REGULARITY_THRESHOLD = 3
-MIN_OCCURRENCES = 3
-AMOUNT_VARIATION_THRESHOLD = 0.15
-
-def detect_recurring(df: pd.DataFrame) -> list[dict]:
+def detect_recurring(transactions_df: pd.DataFrame) -> list[dict]:
     """Detect recurring payments or deposits."""
     recurring = []
 
     # Withdrawals
-    w_df = df[df["Withdrawal (INR)"] > 0][["parsed_date", "Narration", "Withdrawal (INR)", "category"]]
-    if not w_df.empty:
-        detect_exact_amount_recurring(w_df, "withdrawal", "Withdrawal (INR)", recurring)
-        detect_similar_amount_recurring(w_df, "withdrawal", "Withdrawal (INR)", recurring)
+    withdrawals_df = transactions_df[transactions_df["Withdrawal (INR)"] > 0][[
+        "parsed_date", "Narration", "Withdrawal (INR)", "category",
+    ]]
+    if not withdrawals_df.empty:
+        detect_exact_amount_recurring(
+            withdrawals_df, "withdrawal", "Withdrawal (INR)", recurring,
+        )
+        detect_similar_amount_recurring(
+            withdrawals_df, "withdrawal", "Withdrawal (INR)", recurring,
+        )
 
     # Deposits
-    d_df = df[df["Deposit (INR)"] > 0][["parsed_date", "Narration", "Deposit (INR)", "category"]]
-    if not d_df.empty:
-        detect_exact_amount_recurring(d_df, "deposit", "Deposit (INR)", recurring)
-        detect_similar_amount_recurring(d_df, "deposit", "Deposit (INR)", recurring)
+    deposits_df = transactions_df[transactions_df["Deposit (INR)"] > 0][[
+        "parsed_date", "Narration", "Deposit (INR)", "category",
+    ]]
+    if not deposits_df.empty:
+        detect_exact_amount_recurring(
+            deposits_df, "deposit", "Deposit (INR)", recurring,
+        )
+        detect_similar_amount_recurring(
+            deposits_df, "deposit", "Deposit (INR)", recurring,
+        )
 
     return recurring
 
@@ -316,13 +429,19 @@ def determine_frequency(days_delta: list[int]) -> str:
         return "quarterly"
     if ANNUAL_RANGE[0] <= mean_delta <= ANNUAL_RANGE[1]:
         return "annual"
-    if mean_delta <= DAILY_WORKDAYS_THRESHOLD:
-        return "daily/workdays"
-    return f"approximately every {mean_delta} days"
+    return (
+        f"approximately every {mean_delta} days"
+        if mean_delta > DAILY_WORKDAYS_THRESHOLD else "daily/workdays"
+    )
 
-def detect_exact_amount_recurring(df: pd.DataFrame, transaction_type: str, amount_col: str, recurring: list[dict]) -> None:
+def detect_exact_amount_recurring(
+    transactions_df: pd.DataFrame,
+    transaction_type: str,
+    amount_col: str,
+    recurring: list[dict],
+) -> None:
     """Detect recurring transactions with exact amounts."""
-    grouped = df.groupby(["Narration", amount_col]).agg(
+    grouped = transactions_df.groupby(["Narration", amount_col]).agg(
         dates=("parsed_date", list),
         count=("parsed_date", "count"),
         category=("category", "first"),
@@ -345,9 +464,14 @@ def detect_exact_amount_recurring(df: pd.DataFrame, transaction_type: str, amoun
                 "occurrence_count": row["count"],
             })
 
-def detect_similar_amount_recurring(df: pd.DataFrame, transaction_type: str, amount_col: str, recurring: list[dict]) -> None:
+def detect_similar_amount_recurring(
+    transactions_df: pd.DataFrame,
+    transaction_type: str,
+    amount_col: str,
+    recurring: list[dict],
+) -> None:
     """Detect recurring transactions with similar amounts."""
-    grouped = df.groupby("Narration").agg(
+    grouped = transactions_df.groupby("Narration").agg(
         amounts=(amount_col, list),
         dates=("parsed_date", list),
         count=("parsed_date", "count"),
@@ -375,102 +499,119 @@ def detect_similar_amount_recurring(df: pd.DataFrame, transaction_type: str, amo
                     "occurrence_count": row["count"],
                 })
 
-# Constants for anomalies
-MIN_DATA_POINTS = 5
-Z_SCORE_THRESHOLD = 3
-SPIKE_THRESHOLD = 5
-TIME_GAP_MULTIPLIER = 3
+def _detect_transaction_anomalies(
+    transactions_df: pd.DataFrame,
+    amount_col: str,
+    trans_type: str,
+) -> list[Anomaly]:
+    """Detect anomalies for withdrawals or deposits."""
+    anomalies = []
+    stats = transactions_df.groupby("category")[amount_col].agg([
+        "mean", "std",
+    ]).fillna(0)
+    merged_df = transactions_df.merge(stats, on="category", how="left")
+    merged_df["z_score"] = (
+        (merged_df[amount_col] - merged_df["mean"]) /
+        merged_df["std"].replace(0, merged_df[amount_col].mean())
+    )
+    anomaly_rows = merged_df[merged_df["z_score"] > Z_SCORE_THRESHOLD][[
+        "parsed_date", "Narration", amount_col, "category", "z_score",
+    ]]
+    if not anomaly_rows.empty:
+        for _, row in anomaly_rows.iterrows():
+            anomalies.append(Anomaly(
+                parsed_date=row["parsed_date"],
+                Narration=row["Narration"],
+                amount=row[amount_col],
+                type=trans_type,
+                severity=(
+                    "high" if row["z_score"] > Z_SCORE_SEVERITY_THRESHOLD
+                    else "moderate"
+                ),
+                category=row["category"],
+                detection_method="statistical",
+            ))
 
-def detect_anomalies(df: pd.DataFrame) -> list[dict]:
+    # Sudden spikes
+    sorted_df = merged_df.sort_values("parsed_date")
+    sorted_df["prev_amount"] = sorted_df.groupby("category")[amount_col].shift(1)
+    sorted_df["ratio"] = sorted_df[amount_col] / sorted_df["prev_amount"]
+    spikes = sorted_df[
+        (sorted_df["ratio"] > SPIKE_THRESHOLD) & (sorted_df["prev_amount"].notna())
+    ]
+    if not spikes.empty:
+        for _, row in spikes.iterrows():
+            anomalies.append(Anomaly(
+                parsed_date=row["parsed_date"],
+                Narration=row["Narration"],
+                amount=row[amount_col],
+                type=trans_type,
+                severity="high",
+                category=row["category"],
+                detection_method="sudden_increase",
+            ))
+
+    return anomalies
+
+def detect_anomalies(transactions_df: pd.DataFrame) -> list[Anomaly]:
     """Flag unusual transactions by category."""
     anomalies = []
 
     # Withdrawals
-    w_df = df[df["Withdrawal (INR)"] > 0].copy()
-    if not w_df.empty:
-        stats = w_df.groupby("category")["Withdrawal (INR)"].agg(["mean", "std"]).fillna(0)
-        w_df = w_df.merge(stats, on="category", how="left")
-        w_df["z_score"] = (w_df["Withdrawal (INR)"] - w_df["mean"]) / w_df["std"].replace(0, w_df["Withdrawal (INR)"].mean())
-        w_anomalies = w_df[w_df["z_score"] > Z_SCORE_THRESHOLD][["parsed_date", "Narration", "Withdrawal (INR)", "category", "z_score"]]
-        if not w_anomalies.empty:
-            w_anomalies["amount"] = w_anomalies["Withdrawal (INR)"]
-            w_anomalies["type"] = "withdrawal"
-            w_anomalies["severity"] = w_anomalies["z_score"].apply(lambda z: "high" if z > 5 else "moderate")
-            w_anomalies["detection_method"] = "statistical"
-            anomalies.extend(w_anomalies[["parsed_date", "Narration", "amount", "type", "severity", "category", "detection_method"]].to_dict("records"))
-
-        # Sudden spikes
-        w_df = w_df.sort_values("parsed_date")
-        w_df["prev_amount"] = w_df.groupby("category")["Withdrawal (INR)"].shift(1)
-        w_df["ratio"] = w_df["Withdrawal (INR)"] / w_df["prev_amount"]
-        spikes = w_df[(w_df["ratio"] > SPIKE_THRESHOLD) & (w_df["prev_amount"].notna())]
-        if not spikes.empty:
-            spikes = spikes[["parsed_date", "Narration", "Withdrawal (INR)", "category"]]
-            spikes["amount"] = spikes["Withdrawal (INR)"]
-            spikes["type"] = "withdrawal"
-            spikes["severity"] = "high"
-            spikes["detection_method"] = "sudden_increase"
-            anomalies.extend(spikes[["parsed_date", "Narration", "amount", "type", "severity", "category", "detection_method"]].to_dict("records"))
+    withdrawals_df = transactions_df[transactions_df["Withdrawal (INR)"] > 0].copy()
+    if not withdrawals_df.empty:
+        anomalies.extend(_detect_transaction_anomalies(
+            withdrawals_df, "Withdrawal (INR)", "withdrawal",
+        ))
 
     # Deposits
-    d_df = df[df["Deposit (INR)"] > 0].copy()
-    if not d_df.empty:
-        stats = d_df.groupby("category")["Deposit (INR)"].agg(["mean", "std"]).fillna(0)
-        d_df = d_df.merge(stats, on="category", how="left")
-        d_df["z_score"] = (d_df["Deposit (INR)"] - d_df["mean"]) / d_df["std"].replace(0, d_df["Deposit (INR)"].mean())
-        d_anomalies = d_df[d_df["z_score"] > Z_SCORE_THRESHOLD][["parsed_date", "Narration", "Deposit (INR)", "category", "z_score"]]
-        if not d_anomalies.empty:
-            d_anomalies["amount"] = d_anomalies["Deposit (INR)"]
-            d_anomalies["type"] = "deposit"
-            d_anomalies["severity"] = d_anomalies["z_score"].apply(lambda z: "high" if z > 5 else "moderate")
-            d_anomalies["detection_method"] = "statistical"
-            anomalies.extend(d_anomalies[["parsed_date", "Narration", "amount", "type", "severity", "category", "detection_method"]].to_dict("records"))
-
-        # Sudden spikes
-        d_df = d_df.sort_values("parsed_date")
-        d_df["prev_amount"] = d_df.groupby("category")["Deposit (INR)"].shift(1)
-        d_df["ratio"] = d_df["Deposit (INR)"] / d_df["prev_amount"]
-        spikes = d_df[(d_df["ratio"] > SPIKE_THRESHOLD) & (d_df["prev_amount"].notna())]
-        if not spikes.empty:
-            spikes = spikes[["parsed_date", "Narration", "Deposit (INR)", "category"]]
-            spikes["amount"] = spikes["Deposit (INR)"]
-            spikes["type"] = "deposit"
-            spikes["severity"] = "high"
-            spikes["detection_method"] = "sudden_increase"
-            anomalies.extend(spikes[["parsed_date", "Narration", "amount", "type", "severity", "category", "detection_method"]].to_dict("records"))
+    deposits_df = transactions_df[transactions_df["Deposit (INR)"] > 0].copy()
+    if not deposits_df.empty:
+        anomalies.extend(_detect_transaction_anomalies(
+            deposits_df, "Deposit (INR)", "deposit",
+        ))
 
     # Frequency anomalies
-    df_sorted = df.sort_values("parsed_date")
-    df_sorted["next_trans_days"] = (df_sorted["parsed_date"].shift(-1) - df_sorted["parsed_date"]).dt.days
-    mean_gap = df_sorted["next_trans_days"].mean()
-    std_gap = df_sorted["next_trans_days"].std()
-    large_gaps = df_sorted[df_sorted["next_trans_days"] > mean_gap + TIME_GAP_MULTIPLIER * std_gap]
+    sorted_df = transactions_df.sort_values("parsed_date")
+    sorted_df["next_trans_days"] = (
+        sorted_df["parsed_date"].shift(-1) - sorted_df["parsed_date"]
+    ).dt.days
+    mean_gap = sorted_df["next_trans_days"].mean()
+    std_gap = sorted_df["next_trans_days"].std()
+    large_gaps = sorted_df[
+        sorted_df["next_trans_days"] > mean_gap + TIME_GAP_MULTIPLIER * std_gap
+    ]
     if not large_gaps.empty:
         for _, row in large_gaps.iterrows():
             if pd.notna(row["next_trans_days"]):
-                anomalies.append({
-                    "parsed_date": row["parsed_date"],
-                    "Narration": f"Unusual gap after this transaction ({row['next_trans_days']} days)",
-                    "amount": 0,
-                    "type": "gap",
-                    "category": "timing_anomaly",
-                    "severity": "moderate",
-                    "detection_method": "timing_gap",
-                })
+                anomalies.append(Anomaly(
+                    parsed_date=row["parsed_date"],
+                    Narration=(
+                        f"Unusual gap after this transaction "
+                        f"({row['next_trans_days']} days)"
+                    ),
+                    amount=0,
+                    type="gap",
+                    category="timing_anomaly",
+                    severity="moderate",
+                    detection_method="timing_gap",
+                ))
 
     return anomalies
 
-def analyze_cash_flow(df: pd.DataFrame) -> list[dict]:
+def analyze_cash_flow(transactions_df: pd.DataFrame) -> list[dict]:
     """Analyze cash flow."""
     cash_flow_analysis = []
-    if df.empty or "parsed_date" not in df:
+    if transactions_df.empty or "parsed_date" not in transactions_df:
         return cash_flow_analysis
 
-    monthly_cf = df.groupby("month").agg({
+    monthly_cf = transactions_df.groupby("month").agg({
         "Deposit (INR)": "sum",
         "Withdrawal (INR)": "sum",
     }).reset_index()
-    monthly_cf["net_cash_flow"] = monthly_cf["Deposit (INR)"] - monthly_cf["Withdrawal (INR)"]
+    monthly_cf["net_cash_flow"] = (
+        monthly_cf["Deposit (INR)"] - monthly_cf["Withdrawal (INR)"]
+    )
     monthly_cf["month"] = monthly_cf["month"].astype(str)
 
     for _, row in monthly_cf.iterrows():
@@ -485,11 +626,9 @@ def analyze_cash_flow(df: pd.DataFrame) -> list[dict]:
     return cash_flow_analysis
 
 if __name__ == "__main__":
-    input_csv = "data/output/categorized.csv"
-    output_dir = "data/output/analysis"
     input_model = AnalyzerInput(
         input_csv=Path("data/output/categorized.csv"),
         output_dir=Path("data/output/analysis"),
     )
     results = analyze_transactions(input_model)
-    print(results)
+    logger.info("Analysis results: %s", results.dict())

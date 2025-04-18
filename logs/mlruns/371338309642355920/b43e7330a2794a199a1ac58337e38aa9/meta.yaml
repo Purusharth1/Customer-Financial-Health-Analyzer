@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/b43e7330a2794a199a1ac58337e38aa9/artifacts
+end_time: 1744999808488
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: b43e7330a2794a199a1ac58337e38aa9
+run_name: thundering-cod-453
+run_uuid: b43e7330a2794a199a1ac58337e38aa9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744999808470
+status: 3
+tags: []
+user_id: aditya

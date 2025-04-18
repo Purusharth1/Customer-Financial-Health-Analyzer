@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/c81835eb487845f68b2f0ad51b7099cc/artifacts
+end_time: 1745001413592
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: c81835eb487845f68b2f0ad51b7099cc
+run_name: omniscient-colt-694
+run_uuid: c81835eb487845f68b2f0ad51b7099cc
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745001413583
+status: 3
+tags: []
+user_id: aditya

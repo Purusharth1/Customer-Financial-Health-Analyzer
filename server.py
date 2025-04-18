@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.analyzer import analyze_transactions
-from src.models import FinancialPipelineInput, AnalyzerInput, StorytellerInput
+from src.models import AnalyzerInput, FinancialPipelineInput, StorytellerInput
 from src.storyteller import generate_stories
 from src.workflows import financial_analysis_pipeline
 
