@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  pdf_parser:
+    build:
+      context: .
+      dockerfile: Dockerfile.pdf_parser
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs/mlruns:/app/logs/mlruns
+    networks:
+      - app-network
+
+  storyteller:
+    build:
+      context: .
+      dockerfile: Dockerfile.storyteller
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./logs/mlruns:/app/logs/mlruns
+    depends_on:
+      - ollama
+    environment:
+      - LLM_API_ENDPOINT=http://ollama:11434
+    networks:
+      - app-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    command: bash -c "ollama serve & sleep 5 && ollama pull gemma:2b && tail -f /dev/null"
+    networks:
+      - app-network
+
+volumes:
+  ollama-data:
+
+networks:
+  app-network:
+    driver: bridge
