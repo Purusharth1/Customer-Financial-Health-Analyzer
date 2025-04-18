@@ -143,7 +143,8 @@ class QueryProcessor:
                 "july", "august", "september", "october", "november", "december",
             ].index(month_str.lower()) + 1
             start = pd.Timestamp(year=int(year), month=month, day=1)
-            end = (start + pd.offsets.MonthEnd(0)).replace(hour=23, minute=59, second=59)
+            end = (start + pd.offsets.MonthEnd(0)).replace(hour=23, minute=59,
+                                                           second=59)
             return start, end
 
         # Try extracting year
@@ -151,13 +152,15 @@ class QueryProcessor:
         if year_match:
             year = int(year_match.group(1))
             start = pd.Timestamp(year=year, month=1, day=1)
-            end = pd.Timestamp(year=year, month=12, day=31, hour=23, minute=59, second=59)
+            end = pd.Timestamp(year=year, month=12, day=31, hour=23, minute=59,
+                               second=59)
             return start, end
 
         # Default to last DEFAULT_TIMEFRAME_MONTHS months
         end = pd.Timestamp.now()
         start = end - pd.offsets.MonthBegin(DEFAULT_TIMEFRAME_MONTHS)
-        logger.info("No time range specified in query, using default: %s to %s", start, end)
+        logger.info("No time range specified in query, using default: %s to %s",
+                    start, end)
         return start, end
 
     def _filter_by_time(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
@@ -170,9 +173,11 @@ class QueryProcessor:
         if self.df["parsed_date"].dtype == "datetime64[ns]":
             logger.debug("parsed_date is tz-naive")
         else:
-            logger.warning("Unexpected parsed_date dtype: %s", self.df["parsed_date"].dtype)
+            logger.warning("Unexpected parsed_date dtype: %s",
+                           self.df["parsed_date"].dtype)
         # Filter DataFrame
-        mask = (self.df["parsed_date"] >= start_naive) & (self.df["parsed_date"] <= end_naive)
+        mask = ((self.df["parsed_date"] >= start_naive) &
+                (self.df["parsed_date"] <= end_naive))
         return self.df[mask]
 
     def search(self, query: str) -> pd.DataFrame:

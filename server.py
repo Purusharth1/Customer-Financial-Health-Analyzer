@@ -81,12 +81,7 @@ def _raise_empty_transactions_error() -> None:
     """Raise HTTPException for empty transactions."""
     raise HTTPException(status_code=404, detail="No transactions found")
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    """Root endpoint for API health check."""
-    return {"status": "API is running"}
-
-@app.post("/upload-pdfs/", status_code=202)
+@app.post("/upload-pdfs/", status_code=200)  # Changed from 202 to 200
 async def upload_pdfs(
     files: Annotated[list[UploadFile], File()],
 ) -> dict[str, Any]:
@@ -132,6 +127,7 @@ async def upload_pdfs(
     except (ValueError, OSError, pd.errors.EmptyDataError) as e:
         logger.exception("PDF upload error")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/query/")
 async def process_query(request: QueryRequest) -> QueryResponse:

@@ -44,6 +44,8 @@ page = st.sidebar.radio(
 if page == "Upload Statements":
     st.header("Upload Bank Statements")
     st.write("Upload up to 10 PDF bank statements to analyze your financial health.")
+    st.info("Processing large PDFs may take a few minutes. Please wait.")
+
     uploaded_files = st.file_uploader(
         "Choose PDF files",
         type="pdf",
@@ -54,26 +56,27 @@ if page == "Upload Statements":
         if len(uploaded_files) > MAX_PDF_UPLOADS:
             st.error(f"Maximum {MAX_PDF_UPLOADS} PDFs allowed.")
         else:
+            st.write(f"Uploading {len(uploaded_files)} file(s)...")
             files = [
                 ("files", (file.name, file, "application/pdf"))
                 for file in uploaded_files
             ]
+            status_placeholder = st.empty()
             try:
-                with st.spinner("Processing PDFs..."):
+                with st.spinner("Uploading and processing PDFs..."):
                     response = requests.post(
                         f"{API_URL}/upload-pdfs/",
                         files=files,
                         timeout=REQUEST_TIMEOUT,
                     )
-                    if response.status_code == HTTP_ACCEPTED:
-                        st.success(
-                            f"Successfully processed "
-                            f"{response.json()['files_uploaded']} file(s)!",
-                        )
-                    else:
-                        st.error(f"Error: {response.json()['detail']}")
+                if response.status_code == HTTP_OK:
+                    status_placeholder.success(
+                        f"Successfully processed {response.json()['files_uploaded']} file(s)!",
+                    )
+                else:
+                    status_placeholder.error(f"Error: {response.json().get('detail', 'Unknown error')}")
             except RequestException as e:
-                st.error(f"Upload failed: {e!s}")
+                status_placeholder.error(f"Upload failed: {e!s}")
 
 # Transactions
 elif page == "Transactions":
