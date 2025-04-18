@@ -1,6 +1,7 @@
 """Financial Summaries and Narrative Generation.
 
-This module generates a cohesive financial narrative based on analyzed financial data using an LLM.
+This module generates a cohesive financial narrative
+based on analyzed financial data using an LLM.
 Key functionalities include:
 - Creating an engaging, comprehensive story of spending habits and trends.
 - Highlighting key insights and actionable recommendations.
@@ -14,6 +15,7 @@ from pathlib import Path
 import mlflow
 import ollama
 import pandas as pd
+import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.models import StorytellerInput, StorytellerOutput
@@ -22,118 +24,179 @@ from src.utils import get_llm_config, setup_mlflow
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def _raise_empty_llm_response_error() -> None:
+    """Raise ValueError for empty LLM response."""
+    msg = "Empty LLM response"
+    raise ValueError(msg)
+
+def _read_transactions(input_csv: Path) -> pd.DataFrame | None:
+    """Read and validate transactions CSV."""
+    start_time = pd.Timestamp.now()
+    try:
+        transactions_df = pd.read_csv(input_csv)
+        logger.info(
+            "Read CSV: %.3f s",
+            (pd.Timestamp.now() - start_time).total_seconds(),
+        )
+        # Handle the CSV content in a separate function
+        return _process_transactions_df(transactions_df, input_csv)
+    except FileNotFoundError:
+        logger.exception("Input CSV not found: %s", input_csv)
+        mlflow.log_param("error", f"Input CSV not found: {input_csv}")
+        return None
+
+def _process_transactions_df(transactions_df: pd.DataFrame,
+                input_csv: Path) -> pd.DataFrame | None:
+    """Process the transactions DataFrame."""
+    if transactions_df.empty:
+        logger.warning("Empty CSV: %s", input_csv)
+        mlflow.log_param("warning", "Empty CSV")
+        return None
+
+    logger.info("Read CSV with %d rows", len(transactions_df))
+    return transactions_df
+
+def _aggregate_financial_data(transactions_df: pd.DataFrame) -> dict[str, any]:
+    """Aggregate financial data for storytelling."""
+    start_time = pd.Timestamp.now()
+    transactions_df["parsed_date"] = pd.to_datetime(
+        transactions_df["parsed_date"], errors="coerce",
+    )
+    transactions_df["month"] = transactions_df["parsed_date"].dt.to_period("M")
+
+    total_withdrawals = transactions_df["Withdrawal (INR)"].sum()
+    total_deposits = transactions_df["Deposit (INR)"].sum()
+    monthly_agg = transactions_df.groupby("month").agg({
+        "Withdrawal (INR)": "sum",
+        "Deposit (INR)": "sum",
+        "category": lambda x: x.value_counts().idxmax(),
+    }).reset_index()
+    monthly_agg["net"] = (
+        monthly_agg["Deposit (INR)"] - monthly_agg["Withdrawal (INR)"]
+    )
+    sample_transactions = (
+        transactions_df[
+            ["Narration", "Withdrawal (INR)", "Deposit (INR)", "category", "month"]
+        ]
+        .head(5)
+        .to_dict(orient="records")
+    )
+    sample_text = (
+        "\n".join(
+            "- {}: {}: ₹{:.2f} ({})".format(
+                t["month"],
+                t["Narration"],
+                t["Withdrawal (INR)"] or t["Deposit (INR)"],
+                t["category"],
+            )
+            for t in sample_transactions
+        )
+        if sample_transactions
+        else "No specific transactions available."
+    )
+
+    logger.info(
+        "Aggregate: %.3f s",
+        (pd.Timestamp.now() - start_time).total_seconds(),
+    )
+    return {
+        "total_withdrawals": total_withdrawals,
+        "total_deposits": total_deposits,
+        "net_balance": total_deposits - total_withdrawals,
+        "monthly_agg": monthly_agg,
+        "top_category": transactions_df["category"].value_counts().idxmax(),
+        "overspending_months": len(monthly_agg[monthly_agg["net"] < 0]),
+        "saving_months": len(monthly_agg[monthly_agg["net"] > 0]),
+        "sample_text": sample_text,
+    }
+
+def _load_config() -> dict[str, any]:
+    """Load configuration from config.yaml."""
+    config_path = Path("config/config.yaml")
+    try:
+        with config_path.open("r") as f:
+            return yaml.safe_load(f)
+    except (FileNotFoundError, yaml.YAMLError):
+        logger.exception("Failed to load config")
+        raise
+
+def _generate_llm_story(data: dict[str, any], llm_config: dict) -> str | None:
+    """Generate financial story using LLM."""
+    generation_time = pd.Timestamp.now()
+    try:
+        client = ollama.Client(host=llm_config.api_endpoint)
+        mlflow.log_param("llm_model", llm_config.model_name)
+    except (ConnectionError, ValueError) as e:
+        logger.exception("Failed to initialize LLM")
+        mlflow.log_param("llm_error", str(e))
+        return None
+
+    config = _load_config()
+    prompt_template = config["storyteller"]["prompt"]
+    prompt = prompt_template.format(
+        start_month=data["monthly_agg"]["month"].min(),
+        end_month=data["monthly_agg"]["month"].max(),
+        total_withdrawals=data["total_withdrawals"],
+        total_deposits=data["total_deposits"],
+        net_balance=data["net_balance"],
+        balance_status="savings" if data["net_balance"] > 0 else "overspending",
+        top_category=data["top_category"],
+        overspending_months=data["overspending_months"],
+        saving_months=data["saving_months"],
+        sample_text=data["sample_text"],
+    )
+
+    try:
+        response = client.generate(model=llm_config.model_name, prompt=prompt)
+        story = response.get("response", "").strip()
+        if not story:
+            _raise_empty_llm_response_error()
+        else:
+            logger.info(
+                "Story generation: %.3f s",
+                (pd.Timestamp.now() - generation_time).total_seconds(),
+            )
+            return story
+    except (ConnectionError, ValueError) as e:
+        logger.exception("LLM generation failed")
+        mlflow.log_param("llm_error", str(e))
+        return None
+
 def generate_stories(input_model: StorytellerInput) -> StorytellerOutput:
-    """Generate a single financial narrative using an LLM.
-
-    Args:
-        input_model: StorytellerInput with path to categorized transactions CSV and output file.
-
-    Returns:
-        StorytellerOutput with a single story string.
-
-    """
+    """Generate a single financial narrative using an LLM."""
     setup_mlflow()
     logger.info("Generating financial story")
 
-    input_csv = input_model.input_csv
-    output_file = input_model.output_file
-
     with mlflow.start_run(run_name="Storytelling"):
-        mlflow.log_param("input_csv", str(input_csv))
+        mlflow.log_param("input_csv", str(input_model.input_csv))
         start_time = pd.Timestamp.now()
-        try:
-            df = pd.read_csv(input_csv)
-            logger.info(f"Read CSV: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
-        except FileNotFoundError:
-            logger.exception("Input CSV not found: %s", input_csv)
-            mlflow.log_param("error", f"Input CSV not found: {input_csv}")
+
+        transactions_df = _read_transactions(input_model.input_csv)
+        if transactions_df is None:
             return StorytellerOutput(stories=[])
 
-        if df.empty:
-            logger.warning(f"Empty CSV: {input_csv}")
-            mlflow.log_param("warning", "Empty CSV")
-            return StorytellerOutput(stories=[])
-
-        mlflow.log_metric("transactions_storied", len(df))
-
-        t = pd.Timestamp.now()
-        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
-        df["month"] = df["parsed_date"].dt.to_period("M")
-
-        # Aggregate financial data
-        total_withdrawals = df["Withdrawal (INR)"].sum()
-        total_deposits = df["Deposit (INR)"].sum()
-        net_balance = total_deposits - total_withdrawals
-        monthly_agg = df.groupby("month").agg({
-            "Withdrawal (INR)": "sum",
-            "Deposit (INR)": "sum",
-            "category": lambda x: x.value_counts().idxmax(),
-        }).reset_index()
-        monthly_agg["net"] = monthly_agg["Deposit (INR)"] - monthly_agg["Withdrawal (INR)"]
-        top_category = df["category"].value_counts().idxmax()
-        overspending_months = len(monthly_agg[monthly_agg["net"] < 0])
-        saving_months = len(monthly_agg[monthly_agg["net"] > 0])
-
-        # Get sample transactions (up to 5 across the period)
-        sample_transactions = df[["Narration", "Withdrawal (INR)", "Deposit (INR)", "category", "month"]].head(5).to_dict(orient="records")
-        sample_text = "\n".join(
-            f"- {t['month']}: {t['Narration']}: ₹{t['Withdrawal (INR)'] or t['Deposit (INR)']} ({t['category']})"
-            for t in sample_transactions
-        ) if sample_transactions else "No specific transactions available."
-
-        logger.info(f"Aggregate: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Initialize LLM
+        mlflow.log_metric("transactions_storied", len(transactions_df))
+        data = _aggregate_financial_data(transactions_df)
         llm_config = get_llm_config()
-        try:
-            client = ollama.Client(host=llm_config.api_endpoint)
-            mlflow.log_param("llm_model", llm_config.model_name)
-        except Exception as e:
-            logger.error(f"Failed to initialize LLM: {e}")
-            mlflow.log_param("llm_error", str(e))
+        story = _generate_llm_story(data, llm_config)
+        if story is None:
             return StorytellerOutput(stories=[])
 
-        # LLM prompt for a single comprehensive story
-        t = pd.Timestamp.now()
-        prompt = f"""
-You are a financial advisor crafting an engaging, cohesive, and actionable financial story about a user's financial activity from {monthly_agg['month'].min()!s} to {monthly_agg['month'].max()!s}. Based on the following data, create a narrative (300-500 words) that summarizes their spending and income trends, highlights key patterns (e.g., overspending vs. saving months, dominant categories), and offers two actionable recommendations. Make the tone friendly, professional, and motivating.
-
-- Total Spending: ₹{total_withdrawals:.2f}
-- Total Income: ₹{total_deposits:.2f}
-- Net Balance: ₹{net_balance:.2f} ({'savings' if net_balance > 0 else 'overspending'})
-- Most Frequent Category: {top_category}
-- Number of Overspending Months: {overspending_months}
-- Number of Saving Months: {saving_months}
-- Sample Transactions:
-{sample_text}
-
-Example Output:
-"From January to December 2016, your financial journey was a mix of highs and lows! You spent ₹1,200,000 and earned ₹1,250,000, netting a solid ₹50,000 in savings. Shopping dominated your expenses, with frequent retail purchases. You overspent in 6 months, particularly in September due to large POS transactions, but saved significantly in April and October. To stay on track, consider setting a monthly budget for discretionary spending and automate savings to build a stronger financial cushion."
-"""
-        try:
-            response = client.generate(
-                model=llm_config.model_name,
-                prompt=prompt,
-            )
-            story = response.get("response", "").strip()
-            if not story:
-                raise ValueError("Empty LLM response")
-        except Exception as e:
-            logger.error(f"LLM generation failed: {e}")
-            mlflow.log_param("llm_error", str(e))
-            return StorytellerOutput(stories=[])
-
-        logger.info(f"Story generation: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
-
-        # Save story
-        t = pd.Timestamp.now()
-        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, "w") as f:
+        save_time = pd.Timestamp.now()
+        output_file = input_model.output_file
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        with output_file.open("w") as f:
             f.write(story)
-        mlflow.log_artifact(output_file)
-        logger.info(f"Save: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
+        mlflow.log_artifact(str(output_file))
+        logger.info(
+            "Save: %.3f s",
+            (pd.Timestamp.now() - save_time).total_seconds(),
+        )
 
-        logger.info(f"Total: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
+        logger.info(
+            "Total: %.3f s",
+            (pd.Timestamp.now() - start_time).total_seconds(),
+        )
         return StorytellerOutput(stories=[story])
 
 if __name__ == "__main__":
@@ -142,4 +205,4 @@ if __name__ == "__main__":
         output_file=Path("data/output/stories.txt"),
     )
     output = generate_stories(input_model)
-    print(output.stories)
+    logger.info("Generated stories: %s", output.stories)
