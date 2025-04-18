@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/02368e631d8245c1aa7c14d5dcd3b121/artifacts
+end_time: 1745010293551
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 02368e631d8245c1aa7c14d5dcd3b121
+run_name: Storytelling
+run_uuid: 02368e631d8245c1aa7c14d5dcd3b121
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745010237044
+status: 3
+tags: []
+user_id: aditya

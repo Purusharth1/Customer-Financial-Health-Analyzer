@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/da748b5af89340a594ffd38cfaa14881/artifacts
+end_time: 1745003974258
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: da748b5af89340a594ffd38cfaa14881
+run_name: brawny-vole-275
+run_uuid: da748b5af89340a594ffd38cfaa14881
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745003974246
+status: 3
+tags: []
+user_id: aditya

@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/583ddb6bf70a4eaa8c5b5ac0b5295422/artifacts
+end_time: 1745004530369
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 583ddb6bf70a4eaa8c5b5ac0b5295422
+run_name: monumental-hare-300
+run_uuid: 583ddb6bf70a4eaa8c5b5ac0b5295422
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745004530354
+status: 3
+tags: []
+user_id: aditya

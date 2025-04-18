@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/d8dd41b1fae3464780e9ada83e4c1998/artifacts
+end_time: 1745007882319
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: d8dd41b1fae3464780e9ada83e4c1998
+run_name: polite-snail-879
+run_uuid: d8dd41b1fae3464780e9ada83e4c1998
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745007882305
+status: 3
+tags: []
+user_id: aditya

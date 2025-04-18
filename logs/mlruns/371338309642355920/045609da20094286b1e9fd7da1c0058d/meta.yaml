@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/045609da20094286b1e9fd7da1c0058d/artifacts
+end_time: 1745010214953
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 045609da20094286b1e9fd7da1c0058d
+run_name: sincere-calf-429
+run_uuid: 045609da20094286b1e9fd7da1c0058d
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745010214942
+status: 3
+tags: []
+user_id: aditya

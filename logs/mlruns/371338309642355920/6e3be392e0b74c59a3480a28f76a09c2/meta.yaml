@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/6e3be392e0b74c59a3480a28f76a09c2/artifacts
+end_time: 1745003745778
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 6e3be392e0b74c59a3480a28f76a09c2
+run_name: bedecked-wolf-830
+run_uuid: 6e3be392e0b74c59a3480a28f76a09c2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745003745765
+status: 3
+tags: []
+user_id: aditya

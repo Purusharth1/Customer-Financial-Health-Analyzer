@@ -1,3 +1,9 @@
+"""API Endpoint for Parsing HDFC Bank Statement PDFs.
+
+This module provides a FastAPI endpoint to parse HDFC bank statement PDFs
+and return extracted transactions as JSON. It integrates with MLflow for
+logging and tracking.
+"""
 import logging
 from pathlib import Path
 

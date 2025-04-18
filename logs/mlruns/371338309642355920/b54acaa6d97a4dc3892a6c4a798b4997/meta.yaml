@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/b54acaa6d97a4dc3892a6c4a798b4997/artifacts
+end_time: 1745003907762
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: b54acaa6d97a4dc3892a6c4a798b4997
+run_name: vaunted-panda-710
+run_uuid: b54acaa6d97a4dc3892a6c4a798b4997
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745003907749
+status: 3
+tags: []
+user_id: aditya

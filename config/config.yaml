@@ -2,6 +2,23 @@ paths:
   input_dir: "data/input/"
   output_dir: "data/output/"
 
+storyteller:
+  prompt: |
+    You are a financial advisor crafting an engaging, cohesive, and actionable financial story about a user's financial activity from {start_month} to {end_month}. Based on the following data, create a narrative (300-500 words) that summarizes their spending and income trends, highlights key patterns (e.g., overspending vs. saving months, dominant categories), and offers two actionable recommendations. Make the tone friendly, professional, and motivating.
+
+    - Total Spending: ₹{total_withdrawals:.2f}
+    - Total Income: ₹{total_deposits:.2f}
+    - Net Balance: ₹{net_balance:.2f} ({balance_status})
+    - Most Frequent Category: {top_category}
+    - Number of Overspending Months: {overspending_months}
+    - Number of Saving Months: {saving_months}
+    - Sample Transactions:
+    {sample_text}
+
+    Example Output:
+    "From January to December 2016, your financial journey was a mix of highs and lows! You spent ₹1,200,000 and earned ₹1,250,000, netting a solid ₹50,000 in savings. Shopping dominated your expenses, with frequent retail purchases. You overspent in 6 months, particularly in September due to large POS transactions, but saved significantly in April and October. To stay on track, consider setting a monthly budget for discretionary spending and automate savings to build a stronger financial cushion."
+
+
 transaction_categories:
   # Income categories
   income:

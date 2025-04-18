@@ -18,7 +18,7 @@ API_URL = "http://localhost:8000"
 MAX_PDF_UPLOADS = 10
 HTTP_OK = 200
 HTTP_ACCEPTED = 202
-REQUEST_TIMEOUT = 30  # seconds
+REQUEST_TIMEOUT = 300  # seconds
 
 # Streamlit page config
 st.set_page_config(page_title="Financial Health Analyzer", layout="wide")

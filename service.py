@@ -1,3 +1,4 @@
+"""BentoML service for financial analysis."""
 import logging
 
 import bentoml

@@ -102,7 +102,6 @@ class FinancialMemory:
         except (OSError, json.JSONDecodeError, ValueError):
             logger.exception("Failed to load memory")
 
-
 class QueryProcessor:
     """Processes NLP queries on financial transaction data."""
 
@@ -119,41 +118,62 @@ class QueryProcessor:
         if transactions_df.empty:
             logger.warning("Transaction DataFrame is empty")
 
-    def _filter_by_time(self, query: str) -> pd.DataFrame:
-        """Filter transactions by time period specified in the query."""
-        query = query.lower()
-        now = datetime.now(UTC)
-        try:
-            if "2016" in query:
-                logger.info("Filtering for year: 2016")
-                start = datetime(2016, 1, 1, tzinfo=UTC)
-                end = datetime(2016, 12, 31, tzinfo=UTC)
-            elif "last month" in query:
-                start = (now.replace(day=1) - pd.offsets.MonthBegin(1)).replace(day=1)
-                end = now.replace(day=1) - pd.offsets.Day(1)
-            elif "this month" in query:
-                start = now.replace(day=1)
-                end = now
-            elif "last year" in query:
-                start = datetime(now.year - 1, 1, 1, tzinfo=UTC)
-                end = datetime(now.year - 1, 12, 31, tzinfo=UTC)
-            else:
-                start = now - pd.offsets.MonthBegin(DEFAULT_TIMEFRAME_MONTHS)
-                end = now
-            filtered = self.df[
-                (self.df["parsed_date"] >= start) & (self.df["parsed_date"] <= end)
-            ]
-            logger.info(
-                "Filtered %d transactions for %s to %s",
-                len(filtered),
-                start,
-                end,
-            )
-        except (ValueError, TypeError):
-            logger.exception("Time filter error")
-            return self.df
+    def _extract_time_range(self, query: str) -> tuple[pd.Timestamp, pd.Timestamp]:
+        """Extract start and end timestamps from query or use default timeframe."""
+        query_lower = query.lower()
+        # Patterns for common time expressions
+        year_pattern = r"\b(20\d{2})\b"
+        month_year_pattern = r"\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(20\d{2})\b"
+        date_pattern = r"\b(\d{4}-\d{2}-\d{2})\b"
+
+        # Try extracting specific date
+        date_match = re.search(date_pattern, query_lower)
+        if date_match:
+            date = pd.to_datetime(date_match.group(1))
+            start = date.replace(hour=0, minute=0, second=0)
+            end = date.replace(hour=23, minute=59, second=59)
+            return start, end
+
+        # Try extracting month and year
+        month_year_match = re.search(month_year_pattern, query_lower)
+        if month_year_match:
+            month_str, year = month_year_match.groups()
+            month = [
+                "january", "february", "march", "april", "may", "june",
+                "july", "august", "september", "october", "november", "december",
+            ].index(month_str.lower()) + 1
+            start = pd.Timestamp(year=int(year), month=month, day=1)
+            end = (start + pd.offsets.MonthEnd(0)).replace(hour=23, minute=59, second=59)
+            return start, end
+
+        # Try extracting year
+        year_match = re.search(year_pattern, query_lower)
+        if year_match:
+            year = int(year_match.group(1))
+            start = pd.Timestamp(year=year, month=1, day=1)
+            end = pd.Timestamp(year=year, month=12, day=31, hour=23, minute=59, second=59)
+            return start, end
+
+        # Default to last DEFAULT_TIMEFRAME_MONTHS months
+        end = pd.Timestamp.now()
+        start = end - pd.offsets.MonthBegin(DEFAULT_TIMEFRAME_MONTHS)
+        logger.info("No time range specified in query, using default: %s to %s", start, end)
+        return start, end
+
+    def _filter_by_time(self, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+        """Filter DataFrame by time range."""
+        logger.info("Filtering by time: start=%s, end=%s", start, end)
+        # Ensure start and end are tz-naive
+        start_naive = start.tz_localize(None) if start.tzinfo else start
+        end_naive = end.tz_localize(None) if end.tzinfo else end
+        # Verify parsed_date is tz-naive
+        if self.df["parsed_date"].dtype == "datetime64[ns]":
+            logger.debug("parsed_date is tz-naive")
         else:
-            return filtered
+            logger.warning("Unexpected parsed_date dtype: %s", self.df["parsed_date"].dtype)
+        # Filter DataFrame
+        mask = (self.df["parsed_date"] >= start_naive) & (self.df["parsed_date"] <= end_naive)
+        return self.df[mask]
 
     def search(self, query: str) -> pd.DataFrame:
         """Search transactions by keywords in narration or category."""
@@ -353,7 +373,9 @@ class QueryProcessor:
                 return self._process_visit_query(query, query_lower)
             return self._process_fallback_query(query)
 
-        time_df = self._filter_by_time(query)
+        # Extract time range from query
+        start, end = self._extract_time_range(query)
+        time_df = self._filter_by_time(start, end)
         if time_df.empty:
             response = "No transactions found for this period."
             logger.warning("Empty time-filtered data for query: %s", query)
@@ -362,12 +384,10 @@ class QueryProcessor:
 
         return self._process_category_query(query_lower, time_df)
 
-
 def _raise_empty_csv_error() -> None:
     """Raise ValueError for empty CSV with a predefined message."""
     error_msg = EMPTY_CSV_MESSAGE
     raise ValueError(error_msg)
-
 
 def process_nlp_queries(input_model: NlpProcessorInput) -> NlpProcessorOutput:
     """Process NLP queries and save results to output files."""
@@ -410,7 +430,6 @@ def process_nlp_queries(input_model: NlpProcessorInput) -> NlpProcessorOutput:
             )
 
         return result
-
 
 if __name__ == "__main__":
     import argparse

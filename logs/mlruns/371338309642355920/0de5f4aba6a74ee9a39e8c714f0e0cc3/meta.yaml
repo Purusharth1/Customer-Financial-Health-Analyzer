@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/0de5f4aba6a74ee9a39e8c714f0e0cc3/artifacts
+end_time: 1745003352378
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: 0de5f4aba6a74ee9a39e8c714f0e0cc3
+run_name: Transaction_Analysis
+run_uuid: 0de5f4aba6a74ee9a39e8c714f0e0cc3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745003352237
+status: 3
+tags: []
+user_id: aditya

@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/ec5ee2ccfe444ad7a3a6f7b77238c20c/artifacts
+end_time: 1745003746481
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: ec5ee2ccfe444ad7a3a6f7b77238c20c
+run_name: NLP_Query
+run_uuid: ec5ee2ccfe444ad7a3a6f7b77238c20c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1745003746459
+status: 3
+tags: []
+user_id: aditya
