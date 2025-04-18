@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/ed681532372f4166b47983b70831cf68/artifacts
+end_time: 1744997872082
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: ed681532372f4166b47983b70831cf68
+run_name: PDF_Parsing
+run_uuid: ed681532372f4166b47983b70831cf68
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744997866372
+status: 3
+tags: []
+user_id: aditya

@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.analyzer import analyze_transactions
+from src.models import FinancialPipelineInput, AnalyzerInput, StorytellerInput
 from src.storyteller import generate_stories
 from src.workflows import financial_analysis_pipeline
 
@@ -42,6 +43,7 @@ NLP_VIZ_FILE = OUTPUT_DIR / "visualization_data.json"
 # Ensure directories exist
 INPUT_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
 
 class QueryRequest(BaseModel):
     """Schema for query requests."""
@@ -82,13 +84,16 @@ async def upload_pdfs(files: list[UploadFile] = File(...)):
             logger.info(f"Saved PDF: {file_path}")
 
         # Run workflow to parse and categorize
-        result = financial_analysis_pipeline(input_dir=str(INPUT_DIR), query="")
+        input_model = FinancialPipelineInput(input_dir=INPUT_DIR, query="")
+        result = financial_analysis_pipeline(input_model)
         if not CATEGORIZED_CSV.exists():
             raise HTTPException(status_code=500, detail="Failed to generate categorized transactions")
 
         # Run analysis and stories
-        analyze_transactions(str(CATEGORIZED_CSV), str(ANALYSIS_DIR))
-        generate_stories(str(CATEGORIZED_CSV), str(STORIES_FILE))
+        analyzer_input = AnalyzerInput(input_csv=CATEGORIZED_CSV, output_dir=ANALYSIS_DIR)
+        analyze_transactions(analyzer_input)
+        storyteller_input = StorytellerInput(input_csv=CATEGORIZED_CSV, output_file=STORIES_FILE)
+        generate_stories(storyteller_input)
 
         return {"status": "PDFs processed", "files_uploaded": len(files)}
     except Exception as e:
@@ -103,11 +108,9 @@ async def process_query(request: QueryRequest):
         raise HTTPException(status_code=400, detail="No processed transactions. Upload PDFs first.")
 
     try:
-        result = financial_analysis_pipeline(
-            input_dir=str(INPUT_DIR),
-            query=request.query,
-        )
-        response_text = result["nlp_response"]
+        input_model = FinancialPipelineInput(input_dir=INPUT_DIR, query=request.query)
+        result = financial_analysis_pipeline(input_model)
+        response_text = result.nlp_response
         visualization = None
         if NLP_VIZ_FILE.exists():
             with NLP_VIZ_FILE.open() as f:
@@ -154,7 +157,8 @@ async def get_analysis():
     if not ANALYSIS_DIR.exists() or not any(ANALYSIS_DIR.iterdir()):
         raise HTTPException(status_code=404, detail="No analysis available. Upload PDFs first.")
     try:
-        results = analyze_transactions(str(CATEGORIZED_CSV), str(ANALYSIS_DIR))
+        analyzer_input = AnalyzerInput(input_csv=CATEGORIZED_CSV, output_dir=ANALYSIS_DIR)
+        results = analyze_transactions(analyzer_input)
         return results
     except Exception as e:
         logger.error(f"Analysis fetch error: {e}")

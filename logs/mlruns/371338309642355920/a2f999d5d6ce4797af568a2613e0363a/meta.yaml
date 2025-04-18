@@ -1,0 +1,15 @@
+artifact_uri: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920/a2f999d5d6ce4797af568a2613e0363a/artifacts
+end_time: 1744997098735
+entry_point_name: ''
+experiment_id: '371338309642355920'
+lifecycle_stage: active
+run_id: a2f999d5d6ce4797af568a2613e0363a
+run_name: clumsy-shrimp-312
+run_uuid: a2f999d5d6ce4797af568a2613e0363a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744997098722
+status: 3
+tags: []
+user_id: aditya

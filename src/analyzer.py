@@ -11,17 +11,27 @@ payments, and anomalies. Key functionalities include:
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 import mlflow
 import numpy as np
 import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
+from src.models import (
+    AccountOverview,
+    AnalyzerInput,
+    AnalyzerOutput,
+    Anomaly,
+    CashFlow,
+    Fee,
+    Pattern,
+    Recurring,
+)
 from src.utils import sanitize_metric_name, setup_mlflow
-from src.models import AnalyzerInput, AnalyzerOutput, Pattern, Fee, Recurring, Anomaly, CashFlow, AccountOverview
+
 # Create a custom logger
 logger = logging.getLogger(__name__)
+
 
 def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
     """Analyze transactions for patterns, fees, recurring payments, anomalies, and account overview.
@@ -52,7 +62,7 @@ def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
             balance_percentage=0.0,
             income_percentage=0.0,
             expense_percentage=0.0,
-        )
+        ),
     )
 
     with mlflow.start_run(run_name="Transaction_Analysis"):
@@ -100,7 +110,7 @@ def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
         prev_income = df[df["month"] == prev_month]["Deposit (INR)"].sum()
         prev_expense = df[df["month"] == prev_month]["Withdrawal (INR)"].sum()
         prev_balance = prev_income - prev_expense
-        
+
         # Using the Pydantic model directly
         results.account_overview = AccountOverview(
             total_balance=float(total_balance),
@@ -110,7 +120,7 @@ def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
             income_percentage=float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
             expense_percentage=float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
         )
-        
+
         mlflow.log_metrics({
             "total_balance": total_balance,
             "monthly_income": latest_income,
@@ -172,7 +182,7 @@ def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
         mlflow.log_metric(sanitize_metric_name("recurring_count"), len(results.recurring))
         mlflow.log_metric(sanitize_metric_name("anomalies_count"), len(results.anomalies))
         mlflow.log_metric(sanitize_metric_name("cash_flow_count"), len(results.cash_flow))
-        
+
         # Log account overview metrics
         account_dict = results.account_overview.dict()
         for subkey, value in account_dict.items():
@@ -479,7 +489,7 @@ if __name__ == "__main__":
     output_dir = "data/output/analysis"
     input_model = AnalyzerInput(
         input_csv=Path("data/output/categorized.csv"),
-        output_dir=Path("data/output/analysis")
+        output_dir=Path("data/output/analysis"),
     )
     results = analyze_transactions(input_model)
     print(results)

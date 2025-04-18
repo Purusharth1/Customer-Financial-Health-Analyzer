@@ -17,18 +17,29 @@ from prefect import flow, task
 sys.path.append(str(Path(__file__).parent.parent))
 from src.analyzer import analyze_transactions
 from src.categorizer import categorize_transactions
+from src.models import (
+    AnalyzerInput,
+    AnalyzerOutput,
+    CategorizerInput,
+    CategorizerOutput,
+    FinancialPipelineInput,
+    FinancialPipelineOutput,
+    NlpProcessorInput,
+    NlpProcessorOutput,
+    PdfProcessingInput,
+    PdfProcessingOutput,
+    StorytellerInput,
+    StorytellerOutput,
+    TimelineInput,
+    TimelineOutput,
+    VisualizerInput,
+    VisualizerOutput,
+)
 from src.nlp_processor import process_nlp_queries
 from src.pdf_parser import process_pdf_statements
 from src.storyteller import generate_stories
 from src.timeline import build_timeline
 from src.visualizer import generate_visualizations
-from src.models import (
-    FinancialPipelineInput, FinancialPipelineOutput, PdfProcessingInput,
-    TimelineInput, CategorizerInput, AnalyzerInput, VisualizerInput,
-    StorytellerInput, NlpProcessorInput, PdfProcessingOutput, TimelineOutput,
-    CategorizerOutput, AnalyzerOutput, VisualizerOutput, StorytellerOutput,
-    NlpProcessorOutput
-)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -128,7 +139,7 @@ def process_nlp_queries_task(
         input_csv=Path(input_csv),
         query=query,
         output_file=Path(output_file),
-        visualization_file=Path(visualization_file) if visualization_file else None
+        visualization_file=Path(visualization_file) if visualization_file else None,
     )
     logger.info(f"Processing NLP query from {input_csv} to {output_file}")
     try:
@@ -142,7 +153,7 @@ def process_nlp_queries_task(
 
 @flow(name="Financial_Analysis_Pipeline")
 def financial_analysis_pipeline(
-    input_model: FinancialPipelineInput = FinancialPipelineInput()
+    input_model: FinancialPipelineInput = FinancialPipelineInput(),
 ) -> FinancialPipelineOutput:
     """Orchestrate financial analysis tasks.
 
@@ -198,7 +209,7 @@ def financial_analysis_pipeline(
         analysis=analysis,
         visualizations=visualizations,
         stories=stories.stories,
-        nlp_response=nlp_response.text_response
+        nlp_response=nlp_response.text_response,
     )
 
 

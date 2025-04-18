@@ -1,13 +1,20 @@
 """Visualization of Financial Data."""
 import json
 import logging
+import sys
 from pathlib import Path
 
 import mlflow
 import pandas as pd
-import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
-from src.models import VisualizerInput, VisualizerOutput, SpendingTrends, ExpenseBreakdown, AccountOverview
+from src.models import (
+    AccountOverview,
+    ExpenseBreakdown,
+    SpendingTrends,
+    VisualizerInput,
+    VisualizerOutput,
+)
 from src.utils import setup_mlflow
 
 logging.basicConfig(level=logging.INFO)
@@ -135,7 +142,7 @@ def generate_visualizations(input_model: VisualizerInput) -> VisualizerOutput:
 if __name__ == "__main__":
     input_model = VisualizerInput(
         input_csv=Path("data/output/categorized.csv"),
-        output_dir=Path("data/output")
+        output_dir=Path("data/output"),
     )
     results = generate_visualizations(input_model)
     print(results.dict())

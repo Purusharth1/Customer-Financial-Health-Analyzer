@@ -1,0 +1,6 @@
+artifact_location: file:///home/aditya/Documents/Mlops/Customer-Financial-Health-Analyzer/logs/mlruns/371338309642355920
+creation_time: 1744996205763
+experiment_id: '371338309642355920'
+last_update_time: 1744996205763
+lifecycle_stage: active
+name: Financial_Analyzer

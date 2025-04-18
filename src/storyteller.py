@@ -30,6 +30,7 @@ def generate_stories(input_model: StorytellerInput) -> StorytellerOutput:
 
     Returns:
         StorytellerOutput with a single story string.
+
     """
     setup_mlflow()
     logger.info("Generating financial story")
@@ -72,7 +73,7 @@ def generate_stories(input_model: StorytellerInput) -> StorytellerOutput:
         top_category = df["category"].value_counts().idxmax()
         overspending_months = len(monthly_agg[monthly_agg["net"] < 0])
         saving_months = len(monthly_agg[monthly_agg["net"] > 0])
-        
+
         # Get sample transactions (up to 5 across the period)
         sample_transactions = df[["Narration", "Withdrawal (INR)", "Deposit (INR)", "category", "month"]].head(5).to_dict(orient="records")
         sample_text = "\n".join(
@@ -95,7 +96,7 @@ def generate_stories(input_model: StorytellerInput) -> StorytellerOutput:
         # LLM prompt for a single comprehensive story
         t = pd.Timestamp.now()
         prompt = f"""
-You are a financial advisor crafting an engaging, cohesive, and actionable financial story about a user's financial activity from {str(monthly_agg['month'].min())} to {str(monthly_agg['month'].max())}. Based on the following data, create a narrative (300-500 words) that summarizes their spending and income trends, highlights key patterns (e.g., overspending vs. saving months, dominant categories), and offers two actionable recommendations. Make the tone friendly, professional, and motivating.
+You are a financial advisor crafting an engaging, cohesive, and actionable financial story about a user's financial activity from {monthly_agg['month'].min()!s} to {monthly_agg['month'].max()!s}. Based on the following data, create a narrative (300-500 words) that summarizes their spending and income trends, highlights key patterns (e.g., overspending vs. saving months, dominant categories), and offers two actionable recommendations. Make the tone friendly, professional, and motivating.
 
 - Total Spending: ₹{total_withdrawals:.2f}
 - Total Income: ₹{total_deposits:.2f}
@@ -138,7 +139,7 @@ Example Output:
 if __name__ == "__main__":
     input_model = StorytellerInput(
         input_csv=Path("data/output/categorized.csv"),
-        output_file=Path("data/output/stories.txt")
+        output_file=Path("data/output/stories.txt"),
     )
     output = generate_stories(input_model)
     print(output.stories)

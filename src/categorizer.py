@@ -21,7 +21,7 @@ import yaml
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.config import LLMConfig
 from llm_setup.ollama_manager import query_llm, setup_ollama
-from src.models import CategorizerInput, CategorizerOutput, CategorizedTransaction
+from src.models import CategorizedTransaction, CategorizerInput, CategorizerOutput
 from src.utils import (
     ensure_no_active_run,
     get_llm_config,
@@ -303,6 +303,6 @@ if __name__ == "__main__":
     output_csv = "data/output/categorized.csv"
     input_model = CategorizerInput(
         timeline_csv = "data/output/timeline.csv",
-        output_csv = "data/output/categorized.csv"
+        output_csv = "data/output/categorized.csv",
     )
     transactions_df = categorize_transactions(input_model)

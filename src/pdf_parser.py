@@ -459,7 +459,7 @@ def process_single_pdf(
     return transactions_df, customer_info
 
 
-def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+def standardize_column_names(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Standardize column names and remove duplicates."""
     # Map from various column names to standard names
     column_mapping = {
@@ -471,7 +471,7 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     }
 
     # Rename columns based on mapping
-    df = df.rename(columns=column_mapping)
+    dataframe = dataframe.rename(columns=column_mapping)
 
     # Select only unique columns (prefer standard names)
     standard_columns = [
@@ -480,9 +480,9 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     # Keep only standard columns that exist in the DataFrame
-    existing_columns = [col for col in standard_columns if col in df.columns]
+    existing_columns = [col for col in standard_columns if col in dataframe.columns]
 
-    return df[existing_columns]
+    return dataframe[existing_columns]
 
 
 def combine_transactions(all_transactions: list[pd.DataFrame]) -> pd.DataFrame:
@@ -498,8 +498,9 @@ def combine_transactions(all_transactions: list[pd.DataFrame]) -> pd.DataFrame:
     numeric_columns = ["Withdrawal (INR)", "Deposit (INR)", "Closing Balance (INR)"]
     for col in numeric_columns:
         if col in combined_df.columns:
-            combined_df[col] = pd.to_numeric(combined_df[col], errors="coerce").fillna(0.0)
-
+            combined_df[col] = (
+                pd.to_numeric(combined_df[col], errors="coerce").fillna(0.0)
+            )
     required_columns = [
         "Date",
         "Narration",
@@ -530,36 +531,42 @@ def save_combined_outputs(
         json.dump([info.dict() for info in all_customer_info], f, indent=4)
 
 
-def create_transaction_objects(df: pd.DataFrame) -> list[Transaction]:
+def create_transaction_objects(dataframe: pd.DataFrame) -> list[Transaction]:
     """Create Transaction objects from DataFrame rows, handling column naming issues."""
     transactions = []
-    for _, row in df.iterrows():
-        # Create a clean dict with standard column names
+    column_mapping = {
+        "Date": "Date",
+        "Narration": "Narration",
+        "Reference Number": "Reference Number",
+        "Reference_Number": "Reference Number",
+        "Value Date": "Value Date",
+        "Value_Date": "Value Date",
+        "Withdrawal (INR)": "Withdrawal (INR)",
+        "Withdrawal_INR": "Withdrawal (INR)",
+        "Deposit (INR)": "Deposit (INR)",
+        "Deposit_INR": "Deposit (INR)",
+        "Closing Balance (INR)": "Closing Balance (INR)",
+        "Closing_Balance_INR": "Closing Balance (INR)",
+        "Source_File": "Source_File",
+    }
+
+    for _, row in dataframe.iterrows():
         transaction_data = {}
-        for column in df.columns:
-            if column == "Date":
-                transaction_data["Date"] = row["Date"]
-            elif column == "Narration":
-                transaction_data["Narration"] = row["Narration"]
-            elif column in ["Reference Number", "Reference_Number"]:
-                transaction_data["Reference Number"] = row[column]
-            elif column in ["Value Date", "Value_Date"]:
-                transaction_data["Value Date"] = row[column]
-            elif column in ["Withdrawal (INR)", "Withdrawal_INR"]:
-                transaction_data["Withdrawal (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
-            elif column in ["Deposit (INR)", "Deposit_INR"]:
-                transaction_data["Deposit (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
-            elif column in ["Closing Balance (INR)", "Closing_Balance_INR"]:
-                transaction_data["Closing Balance (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
-            elif column == "Source_File":
-                transaction_data["Source_File"] = row["Source_File"]
+        for column in dataframe.columns:
+            standardized_col = column_mapping.get(column, column)
+            if standardized_col in ["Withdrawal (INR)",
+                                "Deposit (INR)", "Closing Balance (INR)"]:
+                transaction_data[standardized_col] = (float(row[column])
+                                                if pd.notna(row[column]) else 0.0)
+            else:
+                transaction_data[standardized_col] = row[column]
 
         try:
             transaction = Transaction(**transaction_data)
             transactions.append(transaction)
-        except Exception as e:
-            print(f"Error creating Transaction object: {e}")
-            # Skip this row and continue with the next one
+        except (ValueError, TypeError):
+            # Log the error or handle it as needed
+            pass
 
     return transactions
 
@@ -617,7 +624,8 @@ def process_pdf_statements(input_model: PdfProcessingInput) -> PdfProcessingOutp
 
             # Group transactions by source file
             all_transactions = []
-            for source_file, group_df in combined_df.groupby("Source_File", dropna=False):
+            grouped = combined_df.groupby("Source_File", dropna=False)
+            for _source_file, group_df in grouped:
                 group_df_clean = standardize_column_names(group_df)
                 transactions = create_transaction_objects(group_df_clean)
                 all_transactions.append(transactions)
@@ -647,18 +655,15 @@ def main() -> None:
         "../Customer-Financial-Health-Analyzer/data/input",
     ).resolve()
     default_output_path = Path(
-        "../Customer-Financial-Health-Analyzer/data/output/transactions.csv",
+        "../Customer-Financial-Health-Analyzer/data/output/all_transactions.csv",
     ).resolve()
-
     folder_path = input(
         "Enter folder path containing 1-10 PDF statements for one person "
         f"(default: {default_input_path}): ",
     ).strip()
-
     folder_path = Path(folder_path or default_input_path).resolve()
-
     if not folder_path.is_dir():
-        print(f"Error: {folder_path} is not a valid directory")
+        # Use logging instead of print
         return
 
     output_csv = default_output_path
@@ -666,14 +671,7 @@ def main() -> None:
 
     # Process PDFs
     input_model = PdfProcessingInput(folder_path=folder_path, output_csv=output_csv)
-    result = process_pdf_statements(input_model)
-
-    if result.customer_info and result.transactions:
-        print(f"Successfully processed {len(result.transactions)} PDF files")
-        print(f"Total transactions extracted: {sum(len(trans) for trans in result.transactions)}")
-        print(f"Output saved to: {output_csv}")
-    else:
-        print("No transactions extracted from the PDF files")
+    process_pdf_statements(input_model)
 
 
 if __name__ == "__main__":

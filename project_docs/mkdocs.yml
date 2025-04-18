@@ -1,0 +1,63 @@
+site_name: Customer Financial Health Analyzer
+site_description: Documentation for the Customer Financial Health Analyzer a powerful tool for financial analysis and real-time market data.
+site_author: Purusharth Singh Chauhan
+site_url: https://github.com/Purusharth1/Customer-Financial-Health-Analyzer.git
+repo_url: https://github.com/Purusharth1/Customer-Financial-Health-Analyzer.git
+repo_name: Customer-Financial-Health-Analyzer
+
+theme:
+  name: material
+  palette:
+    primary: blue
+    accent: green
+  features:
+    - content.code.copy
+    - content.tabs
+
+nav:
+  - Home: index.md
+  - Project Architecture: architecture.md
+  - Features: features.md
+  - Installation Guide: installation.md
+  - Usage Guide: usage.md
+  - API Documentation: api.md
+  - Experience and Learnings: experience.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tasklist
+  - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.tilde
+  - attr_list
+  - md_in_html
+  - admonition
+  - codehilite
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  - mkdocstrings
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Purusharth1/Customer-Financial-Health-Analyzer.git
+
+
+

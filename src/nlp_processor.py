@@ -17,7 +17,13 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.ollama_manager import query_llm
-from src.models import NlpProcessorInput, NlpProcessorOutput, VisualizationData, QueryRecord, FinancialMemoryState
+from src.models import (
+    FinancialMemoryState,
+    NlpProcessorInput,
+    NlpProcessorOutput,
+    QueryRecord,
+    VisualizationData,
+)
 from src.utils import get_llm_config, setup_mlflow
 
 logging.basicConfig(
@@ -40,7 +46,7 @@ class FinancialMemory:
         self.queries.append(QueryRecord(
             query=query,
             result=result,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         ))
         self.queries = self.queries[-10:]
         self._save()

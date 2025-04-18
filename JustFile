@@ -1,0 +1,56 @@
+# Justfile for Customer Financial Health Analyzer
+
+# Default command: show available tasks
+default:
+    just --list
+
+# Set up Python environment and install dependencies
+setup:
+    uv sync
+
+# Run the full Prefect workflow
+run-workflow:
+    uv run src/workflows.py
+
+# Start the FastAPI server
+start-api:
+    uv run fastapi run server.py
+
+# Start the Streamlit UI
+start-ui:
+    uv run streamlit run app.py
+
+# Start all services (workflow, API, UI) in background
+start-all:
+    #!/bin/bash
+    echo "Starting all services..."
+    uv run src/workflows.py > logs/workflow.log 2>&1 &
+    uv run uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload > logs/api.log 2>&1 &
+    uv run streamlit run app.py > logs/streamlit.log 2>&1 &
+    echo "Services started. Logs are in logs/"
+
+# Stop all running services
+stop-all:
+    #!/bin/bash
+    echo "Stopping all services..."
+    pkill -f "uv run src/workflows.py"
+    pkill -f "uvicorn src.api:app"
+    pkill -f "streamlit run app.py"
+    echo "Services stopped."
+
+# Serve MkDocs documentation
+docs-serve:
+    uv run mkdocs serve --config-file project_docs/mkdocs.yml
+
+# Run load testing with Locust (optional)
+load-testing:
+    uv run locust -f tests/load_test.py
+
+# Clean output directories
+clean:
+    rm -rf data/output/*
+    rm -rf logs/*.log
+
+# Initialize logs directory
+init-logs:
+    mkdir -p logs

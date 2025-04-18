@@ -1,11 +1,11 @@
 """Pydantic models for data validation and serialization."""
 
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any
-import re
 
-from pydantic import BaseModel, Field, validator, constr
+from pydantic import BaseModel, Field, constr, validator
+
 
 # Utility models
 class FilePath(BaseModel):
@@ -32,12 +32,12 @@ class NonEmptyStr(BaseModel):
 class Transaction(BaseModel):
     Date: str
     Narration: str
-    Reference_Number: Optional[str] = Field(default="", alias="Reference Number")
-    Value_Date: Optional[str] = Field(default="", alias="Value Date")
+    Reference_Number: str | None = Field(default="", alias="Reference Number")
+    Value_Date: str | None = Field(default="", alias="Value Date")
     Withdrawal_INR: float = Field(default=0.0, alias="Withdrawal (INR)")
     Deposit_INR: float = Field(default=0.0, alias="Deposit (INR)")
     Closing_Balance_INR: float = Field(default=0.0, alias="Closing Balance (INR)")
-    Source_File: Optional[str] = ""
+    Source_File: str | None = ""
 
     @validator("Date", "Value_Date")
     def validate_date_format(cls, v: str) -> str:
@@ -48,19 +48,19 @@ class Transaction(BaseModel):
 class CategorizedTransaction(Transaction):
     parsed_date: str
     category: str
-    month: Optional[str] = None
-    weekday: Optional[int] = None
-    is_weekend: Optional[bool] = None
-    day: Optional[int] = None
-    time_of_month: Optional[str] = None
+    month: str | None = None
+    weekday: int | None = None
+    is_weekend: bool | None = None
+    day: int | None = None
+    time_of_month: str | None = None
 
 class CustomerInfo(BaseModel):
-    name: Optional[str] = ""
-    email: Optional[str] = ""
-    account_number: Optional[str] = ""
-    city: Optional[str] = ""
-    state: Optional[str] = ""
-    pdf_files: List[str] = []
+    name: str | None = ""
+    email: str | None = ""
+    account_number: str | None = ""
+    city: str | None = ""
+    state: str | None = ""
+    pdf_files: list[str] = []
 
 # PDF Parser models
 class PdfProcessingInput(BaseModel):
@@ -68,8 +68,8 @@ class PdfProcessingInput(BaseModel):
     output_csv: Path
 
 class PdfProcessingOutput(BaseModel):
-    customer_info: List[CustomerInfo]
-    transactions: List[List[Transaction]]
+    customer_info: list[CustomerInfo]
+    transactions: list[list[Transaction]]
 
 # Timeline models
 class TimelineInput(BaseModel):
@@ -77,7 +77,7 @@ class TimelineInput(BaseModel):
     output_csv: Path
 
 class TimelineOutput(BaseModel):
-    transactions: List[CategorizedTransaction]
+    transactions: list[CategorizedTransaction]
 
 # Categorizer models
 class CategorizerInput(BaseModel):
@@ -85,7 +85,7 @@ class CategorizerInput(BaseModel):
     output_csv: Path
 
 class CategorizerOutput(BaseModel):
-    transactions: List[CategorizedTransaction]
+    transactions: list[CategorizedTransaction]
 
 # Analyzer models
 class AnalyzerInput(BaseModel):
@@ -105,7 +105,7 @@ class Fee(BaseModel):
 
 class Recurring(BaseModel):
     narration: str
-    amount: Union[float, str]
+    amount: float | str
     frequency: str
     category: str
     type: str
@@ -116,7 +116,7 @@ class Recurring(BaseModel):
     occurrence_count: int
 
 class Anomaly(BaseModel):
-    parsed_date: Optional[datetime] = None
+    parsed_date: datetime | None = None
     Narration: str
     amount: float
     type: str
@@ -140,11 +140,11 @@ class AccountOverview(BaseModel):
     expense_percentage: float
 
 class AnalyzerOutput(BaseModel):
-    patterns: List[Pattern]
-    fees: List[Fee]
-    recurring: List[Recurring]
-    anomalies: List[Anomaly]
-    cash_flow: List[CashFlow]
+    patterns: list[Pattern]
+    fees: list[Fee]
+    recurring: list[Recurring]
+    anomalies: list[Anomaly]
+    cash_flow: list[CashFlow]
     account_overview: AccountOverview
 
 # Visualizer models
@@ -153,13 +153,13 @@ class VisualizerInput(BaseModel):
     output_dir: Path
 
 class SpendingTrends(BaseModel):
-    labels: List[str]
-    expenses: List[float]
-    budget: List[float]
+    labels: list[str]
+    expenses: list[float]
+    budget: list[float]
 
 class ExpenseBreakdown(BaseModel):
-    categories: List[str]
-    percentages: List[float]
+    categories: list[str]
+    percentages: list[float]
 
 class VisualizerOutput(BaseModel):
     spending_trends: SpendingTrends
@@ -172,24 +172,24 @@ class StorytellerInput(BaseModel):
     output_file: Path
 
 class StorytellerOutput(BaseModel):
-    stories: List[str]
+    stories: list[str]
 
 # NLP Processor models
 class NlpProcessorInput(BaseModel):
     input_csv: Path
     query: str
     output_file: Path
-    visualization_file: Optional[Path] = None
+    visualization_file: Path | None = None
 
 class VisualizationData(BaseModel):
     type: str
-    data: List[List[Union[str, float]]]
-    columns: List[str]
+    data: list[list[str | float]]
+    columns: list[str]
     title: str
 
 class NlpProcessorOutput(BaseModel):
     text_response: str
-    visualization: Optional[VisualizationData] = None
+    visualization: VisualizationData | None = None
 
 # Workflow models
 class FinancialPipelineInput(BaseModel):
@@ -199,7 +199,7 @@ class FinancialPipelineInput(BaseModel):
 class FinancialPipelineOutput(BaseModel):
     analysis: AnalyzerOutput
     visualizations: VisualizerOutput
-    stories: List[str]
+    stories: list[str]
     nlp_response: str
 
 # Financial Memory models
@@ -209,5 +209,5 @@ class QueryRecord(BaseModel):
     timestamp: str
 
 class FinancialMemoryState(BaseModel):
-    queries: List[QueryRecord]
-    context: Dict[str, str]
+    queries: list[QueryRecord]
+    context: dict[str, str]
