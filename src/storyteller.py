@@ -1,5 +1,4 @@
-"""
-Financial Summaries and Narrative Generation.
+"""Financial Summaries and Narrative Generation.
 
 This module generates concise summaries and narratives based on analyzed financial data.
 Key functionalities include:
@@ -14,8 +13,6 @@ from pathlib import Path
 
 import mlflow
 import pandas as pd
-
-
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.utils import setup_mlflow
@@ -32,6 +29,7 @@ def generate_stories(input_csv: str, output_file: str) -> list[str]:
     
     Returns:
         List of story strings.
+
     """
     setup_mlflow()
     logger.info("Generating financial stories")
@@ -55,7 +53,7 @@ def generate_stories(input_csv: str, output_file: str) -> list[str]:
         monthly = df.groupby("month").agg({
             "Withdrawal (INR)": "sum",
             "Deposit (INR)": "sum",
-            "category": lambda x: x.value_counts().idxmax()  # Most frequent category
+            "category": lambda x: x.value_counts().idxmax(),  # Most frequent category
         }).reset_index()
         monthly["net"] = monthly["Deposit (INR)"] - monthly["Withdrawal (INR)"]
         logger.info(f"Aggregate: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
@@ -78,9 +76,9 @@ def generate_stories(input_csv: str, output_file: str) -> list[str]:
                 insight = f", overspending by ₹{-net:.2f}, mainly on {top_category}."
             else:
                 insight = f", balancing spending and income, primarily on {top_category}."
-            
+
             stories.append(f"{month}: {summary}{insight}")
-        
+
         logger.info(f"Stories: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
         # Save stories

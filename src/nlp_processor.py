@@ -1,5 +1,4 @@
-"""
-Natural Language Processing for Financial Health Analyzer.
+"""Natural Language Processing for Financial Health Analyzer.
 
 Handles:
 - Search across transactions.
@@ -9,13 +8,13 @@ Handles:
 import json
 import logging
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 import mlflow
 import pandas as pd
-import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.ollama_manager import query_llm
 from src.utils import get_llm_config, setup_mlflow
@@ -32,11 +31,11 @@ class FinancialMemory:
     """Manages query history and context."""
 
     def __init__(self, persist_path: str = "data/state/financial_memory.json"):
-        """
-        Initialize memory.
+        """Initialize memory.
 
         Args:
             persist_path: Path to save/load memory.
+
         """
         self.queries = []
         self.context = {}
@@ -90,12 +89,12 @@ class QueryProcessor:
     """Processes search, memory, and conversational queries."""
 
     def __init__(self, df: pd.DataFrame, llm_config: dict):
-        """
-        Initialize with transaction data.
+        """Initialize with transaction data.
 
         Args:
             df: DataFrame with transactions.
             llm_config: LLM configuration.
+
         """
         self.df = df.copy() if not df.empty else df
         self.llm_config = llm_config
@@ -146,7 +145,7 @@ class QueryProcessor:
         logger.info(f"Found {len(matches)} matches for query: {query}")
         return matches
 
-    def process_query(self, query: str) -> Dict[str, Optional[Union[str, Dict]]]:
+    def process_query(self, query: str) -> dict[str, str | dict | None]:
         """Handle all query types."""
         query_lower = query.lower()
 
@@ -253,7 +252,7 @@ class QueryProcessor:
                 "type": "bar",
                 "data": bar_data[["parsed_date", "Withdrawal (INR)"]].values.tolist(),
                 "columns": ["Date", "Amount (INR)"],
-                "title": f"{category} Spending in {period}"
+                "title": f"{category} Spending in {period}",
             }
             logger.info(f"Generated visualization for {category}")
 
@@ -264,10 +263,9 @@ def process_nlp_queries(
     input_csv: str,
     query: str,
     output_file: str,
-    visualization_file: Optional[str] = None
+    visualization_file: str | None = None,
 ) -> str:
-    """
-    Process NLP queries.
+    """Process NLP queries.
 
     Args:
         input_csv: Path to transactions CSV.
@@ -277,6 +275,7 @@ def process_nlp_queries(
 
     Returns:
         Response string.
+
     """
     setup_mlflow()
     llm_config = get_llm_config()
@@ -333,7 +332,7 @@ if __name__ == "__main__":
         "data/output/categorized.csv",
         args.query,
         "data/output/nlp_response.txt",
-        "data/output/visualization_data.json"
+        "data/output/visualization_data.json",
     )
     print("\nQuery Response:")
     print(response)

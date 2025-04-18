@@ -13,7 +13,6 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import mlflow
 import pandas as pd
@@ -38,11 +37,11 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def load_config() -> Dict:
+def load_config() -> dict:
     """Load configuration from config file."""
     config_path = Path(__file__).parent.parent / "config" / "config.yaml"
     try:
-        with open(config_path, "r") as file:
+        with open(config_path) as file:
             config = yaml.safe_load(file)
             return config
     except Exception as e:
@@ -52,11 +51,11 @@ def load_config() -> Dict:
             "transaction_categories": {
                 "income": ["Income (Other)"],
                 "essential_expenses": ["Expense (Other)"],
-            }
+            },
         }
 
 
-def get_all_categories(config: Dict) -> List[str]:
+def get_all_categories(config: dict) -> list[str]:
     """Get a flattened list of all transaction categories from config."""
     categories = []
     cat_groups = config.get("transaction_categories", {})
@@ -65,49 +64,45 @@ def get_all_categories(config: Dict) -> List[str]:
     return categories
 
 
-def get_category_keywords(config: Dict) -> Dict[str, List[str]]:
+def get_category_keywords(config: dict) -> dict[str, list[str]]:
     """Get category keywords mapping from config."""
     return config.get("category_keywords", {})
 
 
-def apply_rules(row: pd.Series, config: Dict) -> str:
+def apply_rules(row: pd.Series, config: dict) -> str:
     """Apply rule-based categorization to a single transaction."""
     narration = str(row["Narration"]).upper()
     withdrawal = row["Withdrawal (INR)"] if not pd.isna(row["Withdrawal (INR)"]) else 0
     deposit = row["Deposit (INR)"] if not pd.isna(row["Deposit (INR)"]) else 0
-    
+
     # Get category keywords from config
     category_keywords = get_category_keywords(config)
-    
+
     # Check each category's keywords
     for category, keywords in category_keywords.items():
         # For income categories, verify deposit is positive
-        if category.startswith("Income") and deposit > 0:
+        if (category.startswith("Income") and deposit > 0) or ((category.startswith("Expense") or category == "Savings/Investment") and withdrawal > 0):
             if any(kw in narration for kw in keywords):
                 return category
-        # For expense categories, verify withdrawal is positive
-        elif (category.startswith("Expense") or category == "Savings/Investment") and withdrawal > 0:
-            if any(kw in narration for kw in keywords):
-                return category
-    
+
     # Default categorization based on transaction type
     if deposit > 0:
         return "Income (Other)"
-    elif withdrawal > 0:
+    if withdrawal > 0:
         return "Expense (Other)"
-    
+
     # If both deposit and withdrawal are 0 (unlikely)
     return ""
 
 
-def get_example_transactions(config: Dict) -> Dict[str, List[Tuple[str, float]]]:
+def get_example_transactions(config: dict) -> dict[str, list[tuple[str, float]]]:
     """Create example transactions for each category based on keywords."""
     examples = {}
     category_keywords = get_category_keywords(config)
-    
+
     for category, keywords in category_keywords.items():
         examples[category] = []
-        
+
         # Generate example transaction descriptions using the keywords
         for i, keyword in enumerate(keywords[:3]):  # Use first 3 keywords for each category
             if category.startswith("Income"):
@@ -116,48 +111,48 @@ def get_example_transactions(config: Dict) -> Dict[str, List[Tuple[str, float]]]
             else:
                 amount = -2000 * (i + 1)  # Negative amount for expenses
                 desc = f"PAYMENT FOR {keyword} SERVICE"
-            
+
             examples[category].append((desc, amount))
-    
+
     return examples
 
 
 def apply_llm_fallback(transactions_df: pd.DataFrame,
                        llm_config: LLMConfig,
-                       config: Dict) -> None:
+                       config: dict) -> None:
     """Use LLM for transaction categorization with few-shot learning examples."""
     # Get all valid categories from config
     valid_categories = get_all_categories(config)
-    
+
     # Get example transactions for each category
     example_transactions = get_example_transactions(config)
-    
+
     # Build context examples for the LLM prompt
     context_examples = []
     for category, examples in example_transactions.items():
         for desc, amount in examples[:1]:  # Use just one example per category to keep prompt size manageable
             context_examples.append(f"Description: '{desc}', Amount: {amount} INR → Category: {category}")
-    
+
     # Find transactions that need LLM categorization
     llm_needed = transactions_df[transactions_df["category"] == ""].index
-    
+
     if not llm_needed.empty:
         logger.info("Using LLM for %d transactions", len(llm_needed))
-        
+
         # Process in batches to avoid overwhelming the LLM
         batch_size = 15
         for i in range(0, len(llm_needed), batch_size):
             batch_indices = llm_needed[i:i+batch_size]
             logger.info("Processing batch %d to %d", i, i+len(batch_indices)-1)
-            
+
             for idx in batch_indices:
                 row = transactions_df.loc[idx]
                 desc = row["Narration"]
-                withdrawal = (row["Withdrawal (INR)"] 
+                withdrawal = (row["Withdrawal (INR)"]
                             if not pd.isna(row["Withdrawal (INR)"]) else 0)
                 deposit = row["Deposit (INR)"] if not pd.isna(row["Deposit (INR)"]) else 0
                 amount = deposit - withdrawal
-                
+
                 # Build prompt with context examples
                 prompt = f"""As a financial analyst, categorize the following bank transaction into EXACTLY ONE of these categories:
                             {', '.join(valid_categories)}
@@ -170,26 +165,26 @@ def apply_llm_fallback(transactions_df: pd.DataFrame,
                             Amount: {amount:.2f} INR (positive=deposit, negative=withdrawal)
 
                             Respond ONLY with the exact category name from the provided list. No explanations or additional text."""
-                
+
                 try:
                     # Query LLM
                     llm_response = query_llm(prompt, llm_config).strip()
                     logger.debug("LLM raw response: '%s'", llm_response)
-                    
+
                     # Match to valid category using fuzzy matching
                     matched_category = None
                     for valid_cat in valid_categories:
                         if valid_cat.lower() in llm_response.lower():
                             matched_category = valid_cat
                             break
-                    
+
                     if matched_category:
                         transactions_df.loc[idx, "category"] = matched_category
                         logger.info(
-                            "Transaction '%s' (%.2f INR) categorized as '%s'", 
-                            desc[:30] + ('...' if len(desc) > 30 else ''), 
-                            amount, 
-                            matched_category
+                            "Transaction '%s' (%.2f INR) categorized as '%s'",
+                            desc[:30] + ("..." if len(desc) > 30 else ""),
+                            amount,
+                            matched_category,
                         )
                     else:
                         # Determine default category based on transaction characteristics
@@ -197,28 +192,28 @@ def apply_llm_fallback(transactions_df: pd.DataFrame,
                             default_category = "Income (Other)"
                         else:
                             default_category = "Expense (Other)"
-                        
+
                         logger.warning(
                             "Invalid LLM category '%s' for '%s', using '%s'",
                             llm_response,
-                            desc[:30] + ('...' if len(desc) > 30 else ''),
-                            default_category
+                            desc[:30] + ("..." if len(desc) > 30 else ""),
+                            default_category,
                         )
                         transactions_df.loc[idx, "category"] = default_category
-                        
+
                     # Add small delay to avoid overwhelming the LLM service
                     time.sleep(0.2)
-                        
+
                 except Exception as e:
-                    logger.exception("LLM failed for transaction '%s': %s", 
-                                    desc[:30] + ('...' if len(desc) > 30 else ''), 
+                    logger.exception("LLM failed for transaction '%s': %s",
+                                    desc[:30] + ("..." if len(desc) > 30 else ""),
                                     str(e))
                     # Determine default category based on transaction characteristics
                     default_category = "Income (Other)" if amount > 0 else "Expense (Other)"
                     transactions_df.loc[idx, "category"] = default_category
 
 
-def categorize_transactions(timeline_csv: str, output_csv: str) -> Optional[pd.DataFrame]:
+def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame | None:
     """Categorize transactions using rules, with LLM as fallback."""
     setup_mlflow()
     llm_config = get_llm_config()

@@ -1,5 +1,4 @@
-"""
-Spending Patterns, Fees, Recurring Payments, and Anomalies Detection.
+"""Spending Patterns, Fees, Recurring Payments, and Anomalies Detection.
 
 This module analyzes financial transactions to identify patterns, fees, recurring
 payments, and anomalies. Key functionalities include:
@@ -33,6 +32,7 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
 
     Returns:
         Dictionary with patterns, fees, recurring, anomalies, cash flow, and account overview.
+
     """
     setup_mlflow()
     logger.info("Starting transaction analysis")
@@ -50,8 +50,8 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
             "monthly_expense": 0.0,
             "balance_percentage": 0.0,
             "income_percentage": 0.0,
-            "expense_percentage": 0.0
-        }
+            "expense_percentage": 0.0,
+        },
     }
 
     with mlflow.start_run(run_name="Transaction_Analysis"):
@@ -83,7 +83,7 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         df["is_weekend"] = df["weekday"].isin([5, 6])
         df["day"] = df["parsed_date"].dt.day
         df["time_of_month"] = df["day"].apply(
-            lambda x: "start" if x <= 10 else "middle" if x <= 20 else "end"
+            lambda x: "start" if x <= 10 else "middle" if x <= 20 else "end",
         )
         logger.info(f"Preprocess: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
@@ -105,12 +105,12 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
             "monthly_expense": float(latest_expense),
             "balance_percentage": float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
             "income_percentage": float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
-            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0)
+            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
         }
         mlflow.log_metrics({
             "total_balance": total_balance,
             "monthly_income": latest_income,
-            "monthly_expense": latest_expense
+            "monthly_expense": latest_expense,
         })
         logger.info(f"Account Overview: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
@@ -224,7 +224,7 @@ def detect_fees(df: pd.DataFrame) -> list[dict]:
     keywords = [
         "FEE", "CHARGE", "INTEREST", "PENALTY", "TAX", "COMMISSION",
         "SERVICE CHARGE", "LATE FEE", "SURCHARGE", "GST",
-        "MAINTENANCE", "AMC", "ANNUAL"
+        "MAINTENANCE", "AMC", "ANNUAL",
     ]
     mask = df["Narration"].str.upper().str.contains("|".join(keywords), na=False)
     fees = df[mask][["parsed_date", "Narration", "Withdrawal (INR)", "Deposit (INR)", "category"]].copy()
@@ -251,7 +251,7 @@ def detect_fees(df: pd.DataFrame) -> list[dict]:
         else "annual" if any(w in x for w in ["ANNUAL", "AMC", "YEARLY"])
         else "maintenance" if any(w in x for w in ["MAINTENANCE", "SERVICE"])
         else "penalty" if any(w in x for w in ["LATE", "PENALTY"])
-        else "other"
+        else "other",
     )
 
     return fees[["parsed_date", "Narration", "amount", "type", "fee_type", "category"]].to_dict("records")
@@ -290,15 +290,15 @@ def determine_frequency(days_delta: list[int]) -> str:
     mean_delta = round(np.mean(days_delta))
     if MONTHLY_RANGE[0] <= mean_delta <= MONTHLY_RANGE[1]:
         return "monthly"
-    elif WEEKLY_RANGE[0] <= mean_delta <= WEEKLY_RANGE[1]:
+    if WEEKLY_RANGE[0] <= mean_delta <= WEEKLY_RANGE[1]:
         return "weekly"
-    elif BIWEEKLY_RANGE[0] <= mean_delta <= BIWEEKLY_RANGE[1]:
+    if BIWEEKLY_RANGE[0] <= mean_delta <= BIWEEKLY_RANGE[1]:
         return "biweekly"
-    elif QUARTERLY_RANGE[0] <= mean_delta <= QUARTERLY_RANGE[1]:
+    if QUARTERLY_RANGE[0] <= mean_delta <= QUARTERLY_RANGE[1]:
         return "quarterly"
-    elif ANNUAL_RANGE[0] <= mean_delta <= ANNUAL_RANGE[1]:
+    if ANNUAL_RANGE[0] <= mean_delta <= ANNUAL_RANGE[1]:
         return "annual"
-    elif mean_delta <= DAILY_WORKDAYS_THRESHOLD:
+    if mean_delta <= DAILY_WORKDAYS_THRESHOLD:
         return "daily/workdays"
     return f"approximately every {mean_delta} days"
 
@@ -307,7 +307,7 @@ def detect_exact_amount_recurring(df: pd.DataFrame, transaction_type: str, amoun
     grouped = df.groupby(["Narration", amount_col]).agg(
         dates=("parsed_date", list),
         count=("parsed_date", "count"),
-        category=("category", "first")
+        category=("category", "first"),
     ).reset_index()
     grouped = grouped[grouped["count"] > 1]
     for _, row in grouped.iterrows():
@@ -324,7 +324,7 @@ def detect_exact_amount_recurring(df: pd.DataFrame, transaction_type: str, amoun
                 "regularity": "high",
                 "first_date": dates[0].strftime("%Y-%m-%d"),
                 "last_date": dates[-1].strftime("%Y-%m-%d"),
-                "occurrence_count": row["count"]
+                "occurrence_count": row["count"],
             })
 
 def detect_similar_amount_recurring(df: pd.DataFrame, transaction_type: str, amount_col: str, recurring: list[dict]) -> None:
@@ -333,7 +333,7 @@ def detect_similar_amount_recurring(df: pd.DataFrame, transaction_type: str, amo
         amounts=(amount_col, list),
         dates=("parsed_date", list),
         count=("parsed_date", "count"),
-        category=("category", "first")
+        category=("category", "first"),
     ).reset_index()
     grouped = grouped[grouped["count"] >= MIN_OCCURRENCES]
     for _, row in grouped.iterrows():
@@ -354,7 +354,7 @@ def detect_similar_amount_recurring(df: pd.DataFrame, transaction_type: str, amo
                     "regularity": "medium",
                     "first_date": dates[0].strftime("%Y-%m-%d"),
                     "last_date": dates[-1].strftime("%Y-%m-%d"),
-                    "occurrence_count": row["count"]
+                    "occurrence_count": row["count"],
                 })
 
 # Constants for anomalies
@@ -437,7 +437,7 @@ def detect_anomalies(df: pd.DataFrame) -> list[dict]:
                     "type": "gap",
                     "category": "timing_anomaly",
                     "severity": "moderate",
-                    "detection_method": "timing_gap"
+                    "detection_method": "timing_gap",
                 })
 
     return anomalies
@@ -450,7 +450,7 @@ def analyze_cash_flow(df: pd.DataFrame) -> list[dict]:
 
     monthly_cf = df.groupby("month").agg({
         "Deposit (INR)": "sum",
-        "Withdrawal (INR)": "sum"
+        "Withdrawal (INR)": "sum",
     }).reset_index()
     monthly_cf["net_cash_flow"] = monthly_cf["Deposit (INR)"] - monthly_cf["Withdrawal (INR)"]
     monthly_cf["month"] = monthly_cf["month"].astype(str)
@@ -461,7 +461,7 @@ def analyze_cash_flow(df: pd.DataFrame) -> list[dict]:
             "income": round(row["Deposit (INR)"], 2),
             "expenses": round(row["Withdrawal (INR)"], 2),
             "net_cash_flow": round(row["net_cash_flow"], 2),
-            "status": "Positive" if row["net_cash_flow"] > 0 else "Negative"
+            "status": "Positive" if row["net_cash_flow"] > 0 else "Negative",
         })
 
     return cash_flow_analysis

@@ -1,5 +1,4 @@
-"""
-FastAPI backend for Customer Financial Health Analyzer.
+"""FastAPI backend for Customer Financial Health Analyzer.
 
 Provides endpoints for PDF uploads, NLP queries, visualizations, transactions, analysis, and stories.
 Serves a basic UI for user interaction.
@@ -7,10 +6,9 @@ Serves a basic UI for user interaction.
 import json
 import logging
 from pathlib import Path
-from typing import List
 
 import pandas as pd
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -47,10 +45,12 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 class QueryRequest(BaseModel):
     """Schema for query requests."""
+
     query: str
 
 class QueryResponse(BaseModel):
     """Schema for query responses."""
+
     response: str
     visualization: dict | None = None
 
@@ -61,9 +61,8 @@ async def get_ui():
         return HTMLResponse(content=f.read())
 
 @app.post("/upload-pdfs/", status_code=202)
-async def upload_pdfs(files: List[UploadFile] = File(...)):
-    """
-    Upload and process PDF bank statements.
+async def upload_pdfs(files: list[UploadFile] = File(...)):
+    """Upload and process PDF bank statements.
 
     Saves PDFs to data/input/, runs workflow, and generates categorized.csv.
     """
@@ -98,8 +97,7 @@ async def upload_pdfs(files: List[UploadFile] = File(...)):
 
 @app.post("/query/", response_model=QueryResponse)
 async def process_query(request: QueryRequest):
-    """
-    Process NLP query and return response/visualization.
+    """Process NLP query and return response/visualization.
     """
     if not CATEGORIZED_CSV.exists():
         raise HTTPException(status_code=400, detail="No processed transactions. Upload PDFs first.")
@@ -107,7 +105,7 @@ async def process_query(request: QueryRequest):
     try:
         result = financial_analysis_pipeline(
             input_dir=str(INPUT_DIR),
-            query=request.query
+            query=request.query,
         )
         response_text = result["nlp_response"]
         visualization = None
@@ -123,8 +121,7 @@ async def process_query(request: QueryRequest):
 
 @app.get("/visualizations/")
 async def get_visualizations():
-    """
-    Retrieve latest visualization data.
+    """Retrieve latest visualization data.
     """
     if not VIZ_FILE.exists():
         raise HTTPException(status_code=404, detail="No visualizations available")
@@ -137,8 +134,7 @@ async def get_visualizations():
 
 @app.get("/transactions/")
 async def get_transactions():
-    """
-    Fetch processed transactions for display.
+    """Fetch processed transactions for display.
     """
     if not CATEGORIZED_CSV.exists():
         raise HTTPException(status_code=404, detail="No transactions available")
@@ -153,8 +149,7 @@ async def get_transactions():
 
 @app.get("/analysis/")
 async def get_analysis():
-    """
-    Retrieve financial analysis results (patterns, fees, recurring, anomalies, cash flow).
+    """Retrieve financial analysis results (patterns, fees, recurring, anomalies, cash flow).
     """
     if not ANALYSIS_DIR.exists() or not any(ANALYSIS_DIR.iterdir()):
         raise HTTPException(status_code=404, detail="No analysis available. Upload PDFs first.")
@@ -167,8 +162,7 @@ async def get_analysis():
 
 @app.get("/stories/")
 async def get_stories():
-    """
-    Retrieve financial stories.
+    """Retrieve financial stories.
     """
     if not STORIES_FILE.exists():
         raise HTTPException(status_code=404, detail="No stories available. Upload PDFs first.")

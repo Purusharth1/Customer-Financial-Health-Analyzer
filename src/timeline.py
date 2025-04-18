@@ -7,11 +7,13 @@ Key functionalities include:
 - Detecting and resolving inconsistencies in date sequences.
 - Generating time-based metadata (e.g., month, weekday) for analysis.
 """
+import sys
+from pathlib import Path
+
 import mlflow
 import pandas as pd
 from dateutil.parser import parse
-import sys
-from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 from src.utils import setup_mlflow
 

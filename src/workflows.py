@@ -1,5 +1,4 @@
-"""
-Prefect Workflows for Orchestration.
+"""Prefect Workflows for Orchestration.
 
 This module defines Prefect workflows to orchestrate the end-to-end financial analysis pipeline.
 Key functionalities include:
@@ -9,11 +8,11 @@ Key functionalities include:
 - Monitoring and logging workflow execution.
 """
 import logging
-from typing import Optional, Dict
+import sys
 from pathlib import Path
 
 from prefect import flow, task
-import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 from src.analyzer import analyze_transactions
 from src.categorizer import categorize_transactions
@@ -60,7 +59,7 @@ def categorize_transactions_task(input_csv: str, output_csv: str) -> None:
         raise
 
 @task
-def analyze_transactions_task(input_csv: str, output_dir: str) -> Dict:
+def analyze_transactions_task(input_csv: str, output_dir: str) -> dict:
     """Analyze transactions."""
     try:
         result = analyze_transactions(input_csv, output_dir)
@@ -71,7 +70,7 @@ def analyze_transactions_task(input_csv: str, output_dir: str) -> Dict:
         raise
 
 @task
-def generate_visualizations_task(input_csv: str, output_dir: str) -> Dict:
+def generate_visualizations_task(input_csv: str, output_dir: str) -> dict:
     """Generate visualizations."""
     try:
         result = generate_visualizations(input_csv, output_dir)
@@ -97,7 +96,7 @@ def process_nlp_queries_task(
     input_csv: str,
     query: str,
     output_file: str,
-    visualization_file: Optional[str] = None
+    visualization_file: str | None = None,
 ) -> str:
     """Process NLP query."""
     try:
@@ -111,10 +110,9 @@ def process_nlp_queries_task(
 @flow(name="Financial_Analysis_Pipeline")
 def financial_analysis_pipeline(
     input_dir: str = "data/input",
-    query: str = "give me a summary for Expense loan in January 2016"
-) -> Dict:
-    """
-    Orchestrate financial analysis tasks.
+    query: str = "give me a summary for Expense loan in January 2016",
+) -> dict:
+    """Orchestrate financial analysis tasks.
 
     Args:
         input_dir: Directory with PDFs.
@@ -122,6 +120,7 @@ def financial_analysis_pipeline(
 
     Returns:
         Dictionary with task results.
+
     """
     logger.info("Starting financial analysis pipeline")
 
@@ -157,7 +156,7 @@ def financial_analysis_pipeline(
         str(categorized_csv),
         query,
         str(nlp_file),
-        str(visualization_file)
+        str(visualization_file),
     )
 
     return {

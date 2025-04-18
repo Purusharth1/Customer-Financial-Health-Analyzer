@@ -1,5 +1,4 @@
-"""
-Visualization of Financial Data.
+"""Visualization of Financial Data.
 
 This module generates data for visualizations such as pie charts, bar charts, and line charts to represent
 financial data. Key functionalities include:
@@ -7,12 +6,12 @@ financial data. Key functionalities include:
 - Computing data for line charts to visualize spending trends over time.
 - Calculating account overview metrics for frontend display.
 """
+import json
 import logging
 from pathlib import Path
-import json
 
-import pandas as pd
 import mlflow
+import pandas as pd
 
 from src.utils import setup_mlflow
 
@@ -28,6 +27,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
     
     Returns:
         Dictionary with spending trends, expense breakdown, and account overview.
+
     """
     setup_mlflow()
     logger.info(f"Generating visualization data: {input_csv}")
@@ -42,8 +42,8 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
             "monthly_expense": 0.0,
             "balance_percentage": 0.0,
             "income_percentage": 0.0,
-            "expense_percentage": 0.0
-        }
+            "expense_percentage": 0.0,
+        },
     }
 
     with mlflow.start_run(run_name="Visualization"):
@@ -96,7 +96,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
         results["spending_trends"] = {
             "labels": labels or ["No Data"],
             "expenses": expenses or [0],
-            "budget": budget or [0]
+            "budget": budget or [0],
         }
 
         # Expense Breakdown
@@ -106,7 +106,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
         percentages = [float(amt / total_expense * 100) if total_expense else 100 for amt in expense_cats] or [100]
         results["expense_breakdown"] = {
             "categories": categories,
-            "percentages": percentages
+            "percentages": percentages,
         }
 
         # Account Overview
@@ -126,7 +126,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
             "monthly_expense": float(latest_expense),
             "balance_percentage": float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
             "income_percentage": float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
-            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0)
+            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
         }
 
         # Log metrics
@@ -135,7 +135,7 @@ def generate_visualizations(input_csv: str, output_dir: str) -> dict:
             "monthly_income": latest_income,
             "monthly_expense": latest_expense,
             "expense_categories_count": len(categories),
-            "months_analyzed": len(labels)
+            "months_analyzed": len(labels),
         })
 
         # Save results to visualization_data.json
