@@ -17,6 +17,7 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.ollama_manager import query_llm
+from src.models import NlpProcessorInput, NlpProcessorOutput, VisualizationData, QueryRecord, FinancialMemoryState
 from src.utils import get_llm_config, setup_mlflow
 
 logging.basicConfig(
@@ -28,37 +29,30 @@ logger = logging.getLogger(__name__)
 TIMEOUT_SECONDS = 30
 
 class FinancialMemory:
-    """Manages query history and context."""
-
     def __init__(self, persist_path: str = "data/state/financial_memory.json"):
-        """Initialize memory.
-
-        Args:
-            persist_path: Path to save/load memory.
-
-        """
-        self.queries = []
-        self.context = {}
+        self.queries: List[QueryRecord] = []
+        self.context: Dict[str, str] = {}
         self.persist_path = persist_path
         if Path(persist_path).exists():
             self._load()
 
     def add_query(self, query: str, result: str) -> None:
-        """Add query and result."""
-        self.queries.append({"query": query, "result": result, "timestamp": datetime.now().isoformat()})
-        self.queries = self.queries[-10:]  # Keep last 10
+        self.queries.append(QueryRecord(
+            query=query,
+            result=result,
+            timestamp=datetime.now().isoformat()
+        ))
+        self.queries = self.queries[-10:]
         self._save()
 
     def add_context(self, key: str, value: str) -> None:
-        """Add context (e.g., laptop_purchase)."""
         self.context[key] = value
         self._save()
 
     def get_context(self) -> str:
-        """Format recent queries and context."""
         context = "Recent queries:\n"
         for q in self.queries[-3:]:
-            context += f"- Q: {q['query']}\n  A: {q['result']}\n"
+            context += f"- Q: {q.query}\n  A: {q.result}\n"
         if self.context:
             context += "Known info:\n"
             for k, v in self.context.items():
@@ -66,36 +60,26 @@ class FinancialMemory:
         return context
 
     def _save(self) -> None:
-        """Save memory to disk."""
         try:
-            state = {"queries": self.queries, "context": self.context}
+            state = FinancialMemoryState(queries=self.queries, context=self.context)
             Path(self.persist_path).parent.mkdir(parents=True, exist_ok=True)
             with Path(self.persist_path).open("w") as f:
-                json.dump(state, f)
+                json.dump(state.dict(), f)
         except Exception as e:
             logger.error(f"Failed to save memory: {e}")
 
     def _load(self) -> None:
-        """Load memory from disk."""
         try:
             with Path(self.persist_path).open() as f:
-                state = json.load(f)
-            self.queries = state.get("queries", [])
-            self.context = state.get("context", {})
+                state_data = json.load(f)
+            state = FinancialMemoryState(**state_data)
+            self.queries = state.queries
+            self.context = state.context
         except Exception as e:
             logger.error(f"Failed to load memory: {e}")
 
 class QueryProcessor:
-    """Processes search, memory, and conversational queries."""
-
     def __init__(self, df: pd.DataFrame, llm_config: dict):
-        """Initialize with transaction data.
-
-        Args:
-            df: DataFrame with transactions.
-            llm_config: LLM configuration.
-
-        """
         self.df = df.copy() if not df.empty else df
         self.llm_config = llm_config
         self.memory = FinancialMemory()
@@ -104,7 +88,6 @@ class QueryProcessor:
             logger.warning("Transaction DataFrame is empty")
 
     def _filter_by_time(self, query: str) -> pd.DataFrame:
-        """Filter transactions by time period."""
         query = query.lower()
         now = datetime.now()
         try:
@@ -132,7 +115,6 @@ class QueryProcessor:
             return self.df
 
     def search(self, query: str) -> pd.DataFrame:
-        """Search transactions by keywords."""
         keywords = [word for word in query.lower().split() if len(word) > 2]
         if not keywords:
             logger.debug("No valid keywords")
@@ -145,11 +127,8 @@ class QueryProcessor:
         logger.info(f"Found {len(matches)} matches for query: {query}")
         return matches
 
-    def process_query(self, query: str) -> dict[str, str | dict | None]:
-        """Handle all query types."""
+    def process_query(self, query: str) -> NlpProcessorOutput:
         query_lower = query.lower()
-
-        # Search query
         if any(term in query_lower for term in ["search", "find", "show me"]):
             matches = self.search(query)
             if matches.empty:
@@ -159,9 +138,8 @@ class QueryProcessor:
                 transactions = matches[["parsed_date", "Narration", "Withdrawal (INR)", "category"]].head(5).to_dict("records")
                 response = f"Found {len(matches)} transaction{'s' if len(matches) > 1 else ''}: {json.dumps(transactions, default=str)}"
             self.memory.add_query(query, response)
-            return {"text_response": response}
+            return NlpProcessorOutput(text_response=response)
 
-        # Financial memory query
         if any(term in query_lower for term in ["how much did i", "when did i", "did i buy"]):
             matches = self.search(query)
             context = self.memory.get_context()
@@ -187,17 +165,15 @@ class QueryProcessor:
                 prompt = f"Answer based on context:\n{context}\nQuery: {query}\nKeep it short."
                 response = query_llm(prompt, self.llm_config, timeout=TIMEOUT_SECONDS).strip()
             self.memory.add_query(query, response)
-            return {"text_response": response}
+            return NlpProcessorOutput(text_response=response)
 
-        # Conversational/summary query
         time_df = self._filter_by_time(query)
         if time_df.empty:
             response = "No transactions found for this period."
             logger.warning(f"Empty time-filtered data for query: {query}")
             self.memory.add_query(query, response)
-            return {"text_response": response}
+            return NlpProcessorOutput(text_response=response)
 
-        # Extract category (e.g., "Expense (Debt Payment)")
         category = None
         possible_categories = time_df["category"].unique()
         for cat in possible_categories:
@@ -205,14 +181,12 @@ class QueryProcessor:
                 category = cat
                 break
         if not category and "expense" in query_lower:
-            # Try to match full category after "expense"
             expense_part = query_lower.split("expense")[-1].strip().split("in")[0].strip()
             for cat in possible_categories:
                 if expense_part in cat.lower():
                     category = cat
                     break
         if not category:
-            # Fallback: extract last meaningful word
             words = query_lower.split()
             for word in reversed(words):
                 if word in time_df["Narration"].str.lower().values:
@@ -222,9 +196,8 @@ class QueryProcessor:
             response = "Couldn’t identify a category."
             logger.debug(f"No category matched in query: {query}")
             self.memory.add_query(query, response)
-            return {"text_response": response}
+            return NlpProcessorOutput(text_response=response)
 
-        # Match category or narration (escape regex chars)
         matches = time_df[
             time_df["category"].str.lower().str.contains(re.escape(category.lower()), na=False) |
             time_df["Narration"].str.lower().str.contains(re.escape(category.lower()), na=False)
@@ -233,7 +206,7 @@ class QueryProcessor:
             response = f"No {category} transactions found."
             logger.info(f"No matches for category '{category}'")
             self.memory.add_query(query, response)
-            return {"text_response": response}
+            return NlpProcessorOutput(text_response=response)
 
         total = matches["Withdrawal (INR)"].sum()
         count = len(matches)
@@ -246,82 +219,65 @@ class QueryProcessor:
 
         viz_data = None
         if count > 1:
-            # Convert dates to strings for JSON serialization
             bar_data = matches.groupby(matches["parsed_date"].dt.strftime("%Y-%m-%d"))["Withdrawal (INR)"].sum().reset_index()
-            viz_data = {
-                "type": "bar",
-                "data": bar_data[["parsed_date", "Withdrawal (INR)"]].values.tolist(),
-                "columns": ["Date", "Amount (INR)"],
-                "title": f"{category} Spending in {period}",
-            }
+            viz_data = VisualizationData(
+                type="bar",
+                data=bar_data[["parsed_date", "Withdrawal (INR)"]].values.tolist(),
+                columns=["Date", "Amount (INR)"],
+                title=f"{category} Spending in {period}",
+            )
             logger.info(f"Generated visualization for {category}")
 
         self.memory.add_query(query, response)
-        return {"text_response": response, "visualization": viz_data}
+        return NlpProcessorOutput(text_response=response, visualization=viz_data)
 
-def process_nlp_queries(
-    input_csv: str,
-    query: str,
-    output_file: str,
-    visualization_file: str | None = None,
-) -> str:
-    """Process NLP queries.
-
-    Args:
-        input_csv: Path to transactions CSV.
-        query: User query.
-        output_file: Path to save response.
-        visualization_file: Optional path for visualization.
-
-    Returns:
-        Response string.
-
-    """
+def process_nlp_queries(input_model: NlpProcessorInput) -> NlpProcessorOutput:
+    """Process NLP queries."""
     setup_mlflow()
     llm_config = get_llm_config()
-    logger.info(f"Processing query: {query}")
+    logger.info(f"Processing query: {input_model.query}")
 
     with mlflow.start_run(run_name="NLP_Query"):
-        mlflow.log_param("input_csv", input_csv)
-        mlflow.log_param("query", query)
+        mlflow.log_param("input_csv", str(input_model.input_csv))
+        mlflow.log_param("query", input_model.query)
 
         try:
-            df = pd.read_csv(input_csv)
+            df = pd.read_csv(input_model.input_csv)
             if df.empty:
                 raise ValueError("Empty CSV")
         except Exception as e:
             error_msg = f"Failed to load CSV: {e}"
             logger.error(error_msg)
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-            with Path(output_file).open("w") as f:
+            input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
+            with input_model.output_file.open("w") as f:
                 f.write(error_msg)
-            return error_msg
+            return NlpProcessorOutput(text_response=error_msg)
 
         try:
             processor = QueryProcessor(df, llm_config)
-            result = processor.process_query(query)
+            result = processor.process_query(input_model.query)
 
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-            with Path(output_file).open("w") as f:
-                f.write(result["text_response"])
-            mlflow.log_artifact(output_file)
+            input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
+            with input_model.output_file.open("w") as f:
+                f.write(result.text_response)
+            mlflow.log_artifact(str(input_model.output_file))
 
-            if visualization_file and result.get("visualization"):
-                Path(visualization_file).parent.mkdir(parents=True, exist_ok=True)
-                with Path(visualization_file).open("w") as f:
-                    json.dump(result["visualization"], f)
-                mlflow.log_artifact(visualization_file)
-                logger.info(f"Saved visualization to {visualization_file}")
+            if input_model.visualization_file and result.visualization:
+                input_model.visualization_file.parent.mkdir(parents=True, exist_ok=True)
+                with input_model.visualization_file.open("w") as f:
+                    json.dump(result.visualization.dict(), f)
+                mlflow.log_artifact(str(input_model.visualization_file))
+                logger.info(f"Saved visualization to {input_model.visualization_file}")
 
-            return result["text_response"]
+            return result
 
         except Exception as e:
             error_msg = f"Error processing query: {e}"
             logger.error(error_msg)
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-            with Path(output_file).open("w") as f:
+            input_model.output_file.parent.mkdir(parents=True, exist_ok=True)
+            with input_model.output_file.open("w") as f:
                 f.write(error_msg)
-            return error_msg
+            return NlpProcessorOutput(text_response=error_msg)
 
 if __name__ == "__main__":
     import argparse

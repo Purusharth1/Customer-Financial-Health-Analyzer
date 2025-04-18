@@ -21,6 +21,7 @@ import yaml
 sys.path.append(str(Path(__file__).parent.parent))
 from llm_setup.config import LLMConfig
 from llm_setup.ollama_manager import query_llm, setup_ollama
+from src.models import CategorizerInput, CategorizerOutput, CategorizedTransaction
 from src.utils import (
     ensure_no_active_run,
     get_llm_config,
@@ -213,12 +214,15 @@ def apply_llm_fallback(transactions_df: pd.DataFrame,
                     transactions_df.loc[idx, "category"] = default_category
 
 
-def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame | None:
+def categorize_transactions(input_model: CategorizerInput) -> CategorizerOutput:
     """Categorize transactions using rules, with LLM as fallback."""
     setup_mlflow()
     llm_config = get_llm_config()
     config = load_config()
     logger.info("Starting transaction categorization")
+
+    timeline_csv = input_model.timeline_csv
+    output_csv = input_model.output_csv
 
     if not setup_ollama(llm_config):
         logger.warning("Ollama setup failed, proceeding with rule-based categorization")
@@ -234,12 +238,12 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame 
         except FileNotFoundError:
             logger.exception("Input CSV not found: %s", timeline_csv)
             mlflow.log_param("error", "Input CSV not found")
-            return None
+            return CategorizerOutput(transactions=[])
 
         if transactions_df.empty:
             logger.warning("No transactions to categorize")
             mlflow.log_param("warning", "No transactions to categorize")
-            return transactions_df
+            return CategorizerOutput(transactions=[])
 
         # Log the categories we're using
         valid_categories = get_all_categories(config)
@@ -278,6 +282,10 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame 
             except Exception:
                 logger.exception("Failed to log metric for '%s'", category)
 
+        transactions = [
+            CategorizedTransaction(**row.to_dict()) for _, row in transactions_df.iterrows()
+        ]
+
         try:
             transactions_df.to_csv(output_csv, index=False)
             mlflow.log_artifact(output_csv)
@@ -287,10 +295,14 @@ def categorize_transactions(timeline_csv: str, output_csv: str) -> pd.DataFrame 
         except Exception:
             logger.exception("Error saving output")
 
-        return transactions_df
+        return CategorizerOutput(transactions=transactions)
 
 
 if __name__ == "__main__":
     timeline_csv = "data/output/timeline.csv"
     output_csv = "data/output/categorized.csv"
-    transactions_df = categorize_transactions(timeline_csv, output_csv)
+    input_model = CategorizerInput(
+        timeline_csv = "data/output/timeline.csv",
+        output_csv = "data/output/categorized.csv"
+    )
+    transactions_df = categorize_transactions(input_model)

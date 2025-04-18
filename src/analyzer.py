@@ -19,11 +19,11 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.utils import sanitize_metric_name, setup_mlflow
-
+from src.models import AnalyzerInput, AnalyzerOutput, Pattern, Fee, Recurring, Anomaly, CashFlow, AccountOverview
 # Create a custom logger
 logger = logging.getLogger(__name__)
 
-def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
+def analyze_transactions(input_model: AnalyzerInput) -> AnalyzerOutput:
     """Analyze transactions for patterns, fees, recurring payments, anomalies, and account overview.
 
     Args:
@@ -36,23 +36,24 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
     """
     setup_mlflow()
     logger.info("Starting transaction analysis")
-
+    input_csv = input_model.input_csv
+    output_dir = input_model.output_dir
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    results = {
-        "patterns": [],
-        "fees": [],
-        "recurring": [],
-        "anomalies": [],
-        "cash_flow": [],
-        "account_overview": {
-            "total_balance": 0.0,
-            "monthly_income": 0.0,
-            "monthly_expense": 0.0,
-            "balance_percentage": 0.0,
-            "income_percentage": 0.0,
-            "expense_percentage": 0.0,
-        },
-    }
+    results = AnalyzerOutput(
+        patterns=[],
+        fees=[],
+        recurring=[],
+        anomalies=[],
+        cash_flow=[],
+        account_overview=AccountOverview(
+            total_balance=0.0,
+            monthly_income=0.0,
+            monthly_expense=0.0,
+            balance_percentage=0.0,
+            income_percentage=0.0,
+            expense_percentage=0.0,
+        )
+    )
 
     with mlflow.start_run(run_name="Transaction_Analysis"):
         mlflow.log_param("input_csv", input_csv)
@@ -99,14 +100,17 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         prev_income = df[df["month"] == prev_month]["Deposit (INR)"].sum()
         prev_expense = df[df["month"] == prev_month]["Withdrawal (INR)"].sum()
         prev_balance = prev_income - prev_expense
-        results["account_overview"] = {
-            "total_balance": float(total_balance),
-            "monthly_income": float(latest_income),
-            "monthly_expense": float(latest_expense),
-            "balance_percentage": float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
-            "income_percentage": float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
-            "expense_percentage": float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
-        }
+        
+        # Using the Pydantic model directly
+        results.account_overview = AccountOverview(
+            total_balance=float(total_balance),
+            monthly_income=float(latest_income),
+            monthly_expense=float(latest_expense),
+            balance_percentage=float(((total_balance - prev_balance) / prev_balance * 100) if prev_balance else 0),
+            income_percentage=float(((latest_income - prev_income) / prev_income * 100) if prev_income else 0),
+            expense_percentage=float(((latest_expense - prev_expense) / prev_expense * 100) if prev_expense else 0),
+        )
+        
         mlflow.log_metrics({
             "total_balance": total_balance,
             "monthly_income": latest_income,
@@ -117,7 +121,7 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         # Patterns
         t = pd.Timestamp.now()
         patterns = detect_patterns(df)
-        results["patterns"] = patterns
+        results.patterns = [Pattern(description=p) for p in patterns]
         patterns_file = Path(output_dir) / "patterns.txt"
         with patterns_file.open("w") as file:
             file.write("\n".join(patterns))
@@ -127,7 +131,7 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         # Fees
         t = pd.Timestamp.now()
         fees = detect_fees(df)
-        results["fees"] = fees
+        results.fees = [Fee(**f) for f in fees]
         fees_file = Path(output_dir) / "fees.csv"
         pd.DataFrame(fees).to_csv(fees_file, index=False)
         mlflow.log_artifact(str(fees_file))
@@ -135,10 +139,10 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
             logger.warning("No fee transactions detected")
         logger.info(f"Fees: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
-        # Recurring
+        # Recurring Payments
         t = pd.Timestamp.now()
         recurring = detect_recurring(df)
-        results["recurring"] = recurring
+        results.recurring = [Recurring(**r) for r in recurring]
         recurring_file = Path(output_dir) / "recurring.csv"
         pd.DataFrame(recurring).to_csv(recurring_file, index=False)
         mlflow.log_artifact(str(recurring_file))
@@ -147,7 +151,7 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         # Anomalies
         t = pd.Timestamp.now()
         anomalies = detect_anomalies(df)
-        results["anomalies"] = anomalies
+        results.anomalies = [Anomaly(**a) for a in anomalies]
         anomalies_file = Path(output_dir) / "anomalies.csv"
         pd.DataFrame(anomalies).to_csv(anomalies_file, index=False)
         mlflow.log_artifact(str(anomalies_file))
@@ -156,19 +160,23 @@ def analyze_transactions(input_csv: str, output_dir: str) -> dict[str, Any]:
         # Cash Flow
         t = pd.Timestamp.now()
         cash_flow = analyze_cash_flow(df)
-        results["cash_flow"] = cash_flow
+        results.cash_flow = [CashFlow(**c) for c in cash_flow]
         cash_flow_file = Path(output_dir) / "cash_flow.csv"
         pd.DataFrame(cash_flow).to_csv(cash_flow_file, index=False)
         mlflow.log_artifact(str(cash_flow_file))
         logger.info(f"Cash Flow: {(pd.Timestamp.now() - t).total_seconds():.3f}s")
 
-        # Log counts
-        for key, items in results.items():
-            if key != "account_overview":
-                mlflow.log_metric(sanitize_metric_name(f"{key}_count"), len(items))
-            else:
-                for subkey, value in items.items():
-                    mlflow.log_metric(sanitize_metric_name(f"account_{subkey}"), value)
+        # Log counts - updated to use Pydantic model attributes
+        mlflow.log_metric(sanitize_metric_name("patterns_count"), len(results.patterns))
+        mlflow.log_metric(sanitize_metric_name("fees_count"), len(results.fees))
+        mlflow.log_metric(sanitize_metric_name("recurring_count"), len(results.recurring))
+        mlflow.log_metric(sanitize_metric_name("anomalies_count"), len(results.anomalies))
+        mlflow.log_metric(sanitize_metric_name("cash_flow_count"), len(results.cash_flow))
+        
+        # Log account overview metrics
+        account_dict = results.account_overview.dict()
+        for subkey, value in account_dict.items():
+            mlflow.log_metric(sanitize_metric_name(f"account_{subkey}"), value)
 
         logger.info(f"Total analysis: {(pd.Timestamp.now() - start_time).total_seconds():.3f}s")
         return results
@@ -469,5 +477,9 @@ def analyze_cash_flow(df: pd.DataFrame) -> list[dict]:
 if __name__ == "__main__":
     input_csv = "data/output/categorized.csv"
     output_dir = "data/output/analysis"
-    results = analyze_transactions(input_csv, output_dir)
+    input_model = AnalyzerInput(
+        input_csv=Path("data/output/categorized.csv"),
+        output_dir=Path("data/output/analysis")
+    )
+    results = analyze_transactions(input_model)
     print(results)

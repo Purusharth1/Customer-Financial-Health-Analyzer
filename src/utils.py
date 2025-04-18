@@ -68,6 +68,6 @@ def get_llm_config() -> LLMConfig:
     config = load_config()
     llm_settings = config.get("llm", {})
     return LLMConfig(
-        model_name=llm_settings.get("model_name", "qwen2.5:7b"),
+        model_name=llm_settings.get("model_name", "llama3.2:3b"),
         api_endpoint=llm_settings.get("api_endpoint", "http://localhost:11434"),
     )

@@ -22,6 +22,13 @@ from src.pdf_parser import process_pdf_statements
 from src.storyteller import generate_stories
 from src.timeline import build_timeline
 from src.visualizer import generate_visualizations
+from src.models import (
+    FinancialPipelineInput, FinancialPipelineOutput, PdfProcessingInput,
+    TimelineInput, CategorizerInput, AnalyzerInput, VisualizerInput,
+    StorytellerInput, NlpProcessorInput, PdfProcessingOutput, TimelineOutput,
+    CategorizerOutput, AnalyzerOutput, VisualizerOutput, StorytellerOutput,
+    NlpProcessorOutput
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,114 +38,83 @@ logger = logging.getLogger(__name__)
 
 
 @task
-def parse_pdfs_task(input_dir: str, output_csv: str) -> None:
+def parse_pdfs_task(input_dir: str, output_csv: str) -> PdfProcessingOutput:
     """Parse PDFs to transactions."""
-    input_path = Path(input_dir)
-    output_path = Path(output_csv)
+    input_model = PdfProcessingInput(folder_path=Path(input_dir), output_csv=Path(output_csv))
     logger.info(f"Parsing PDFs from {input_dir} to {output_csv}")
-    pdf_files = list(input_path.glob("*.pdf"))
-    if not pdf_files:
-        logger.error(f"No PDF files found in {input_dir}")
-        raise FileNotFoundError(f"No PDF files found in {input_dir}")
     try:
-        process_pdf_statements(input_dir, output_csv)
-        if not output_path.exists():
-            logger.error(f"Output CSV not created: {output_csv}")
-            raise RuntimeError(f"Failed to create {output_csv}")
-        logger.info(f"Parsed {len(pdf_files)} PDFs to {output_csv}")
+        result = process_pdf_statements(input_model)
+        logger.info(f"Parsed {len(result.transactions)} PDFs to {output_csv}")
+        return result
     except Exception as e:
         logger.error(f"PDF parsing failed: {e}")
         raise
 
 
 @task
-def build_timeline_task(input_csv: str, output_csv: str) -> None:
+def build_timeline_task(input_csv: str, output_csv: str) -> TimelineOutput:
     """Build transaction timeline."""
+    input_model = TimelineInput(transactions_csv=Path(input_csv), output_csv=Path(output_csv))
     logger.info(f"Building timeline from {input_csv} to {output_csv}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        build_timeline(input_csv, output_csv)
-        if not Path(output_csv).exists():
-            logger.error(f"Output CSV not created: {output_csv}")
-            raise RuntimeError(f"Failed to create {output_csv}")
+        result = build_timeline(input_model)
         logger.info(f"Built timeline to {output_csv}")
+        return result
     except Exception as e:
         logger.error(f"Timeline building failed: {e}")
         raise
 
-
 @task
-def categorize_transactions_task(input_csv: str, output_csv: str) -> None:
+def categorize_transactions_task(input_csv: str, output_csv: str) -> CategorizerOutput:
     """Categorize transactions."""
+    input_model = CategorizerInput(timeline_csv=Path(input_csv), output_csv=Path(output_csv))
     logger.info(f"Categorizing transactions from {input_csv} to {output_csv}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        categorize_transactions(input_csv, output_csv)
-        if not Path(output_csv).exists():
-            logger.error(f"Output CSV not created: {output_csv}")
-            raise RuntimeError(f"Failed to create {output_csv}")
+        result = categorize_transactions(input_model)
         logger.info(f"Categorized transactions to {output_csv}")
+        return result
     except Exception as e:
         logger.error(f"Categorization failed: {e}")
         raise
 
-
 @task
-def analyze_transactions_task(input_csv: str, output_dir: str) -> dict:
+def analyze_transactions_task(input_csv: str, output_dir: str) -> AnalyzerOutput:
     """Analyze transactions."""
+    input_model = AnalyzerInput(input_csv=Path(input_csv), output_dir=Path(output_dir))
     logger.info(f"Analyzing transactions from {input_csv} to {output_dir}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        result = analyze_transactions(input_csv, output_dir)
+        result = analyze_transactions(input_model)
         logger.info(f"Analysis saved to {output_dir}")
         return result
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
         raise
 
-
 @task
-def generate_visualizations_task(input_csv: str, output_dir: str) -> dict:
+def generate_visualizations_task(input_csv: str, output_dir: str) -> VisualizerOutput:
     """Generate visualizations."""
+    input_model = VisualizerInput(input_csv=Path(input_csv), output_dir=Path(output_dir))
     logger.info(f"Generating visualizations from {input_csv} to {output_dir}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        result = generate_visualizations(input_csv, output_dir)
+        result = generate_visualizations(input_model)
         logger.info(f"Visualizations saved to {output_dir}")
         return result
     except Exception as e:
         logger.error(f"Visualization failed: {e}")
         raise
 
-
 @task
-def generate_stories_task(input_csv: str, output_file: str) -> list:
+def generate_stories_task(input_csv: str, output_file: str) -> StorytellerOutput:
     """Generate financial stories."""
+    input_model = StorytellerInput(input_csv=Path(input_csv), output_file=Path(output_file))
     logger.info(f"Generating stories from {input_csv} to {output_file}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        result = generate_stories(input_csv, output_file)
+        result = generate_stories(input_model)
         logger.info(f"Stories saved to {output_file}")
         return result
     except Exception as e:
         logger.error(f"Story generation failed: {e}")
         raise
-
 
 @task
 def process_nlp_queries_task(
@@ -146,15 +122,17 @@ def process_nlp_queries_task(
     query: str,
     output_file: str,
     visualization_file: str | None = None,
-) -> str:
+) -> NlpProcessorOutput:
     """Process NLP query."""
+    input_model = NlpProcessorInput(
+        input_csv=Path(input_csv),
+        query=query,
+        output_file=Path(output_file),
+        visualization_file=Path(visualization_file) if visualization_file else None
+    )
     logger.info(f"Processing NLP query from {input_csv} to {output_file}")
-    input_path = Path(input_csv)
-    if not input_path.exists():
-        logger.error(f"Input CSV not found: {input_csv}")
-        raise FileNotFoundError(f"Input CSV not found: {input_csv}")
     try:
-        result = process_nlp_queries(input_csv, query, output_file, visualization_file)
+        result = process_nlp_queries(input_model)
         logger.info(f"NLP response saved to {output_file}")
         return result
     except Exception as e:
@@ -164,9 +142,8 @@ def process_nlp_queries_task(
 
 @flow(name="Financial_Analysis_Pipeline")
 def financial_analysis_pipeline(
-    input_dir: str = "data/input",
-    query: str = "give me a summary for Expense loan in January 2016",
-) -> dict:
+    input_model: FinancialPipelineInput = FinancialPipelineInput()
+) -> FinancialPipelineOutput:
     """Orchestrate financial analysis tasks.
 
     Args:
@@ -182,9 +159,9 @@ def financial_analysis_pipeline(
     logger.info("Starting financial analysis pipeline")
 
     # Define paths relative to project root
-    base_dir = Path(__file__).parent.parent  # Project root
+    base_dir = Path(__file__).parent.parent
     input_dir = (
-        base_dir / input_dir if not Path(input_dir).is_absolute() else Path(input_dir)
+        base_dir / input_model.input_dir if not input_model.input_dir.is_absolute() else input_model.input_dir
     )
     output_dir = base_dir / "data" / "output"
 
@@ -212,17 +189,17 @@ def financial_analysis_pipeline(
     stories = generate_stories_task(str(categorized_csv), str(stories_file))
     nlp_response = process_nlp_queries_task(
         str(categorized_csv),
-        query,
+        input_model.query,
         str(nlp_file),
         str(visualization_file),
     )
 
-    return {
-        "analysis": analysis,
-        "visualizations": visualizations,
-        "stories": stories,
-        "nlp_response": nlp_response,
-    }
+    return FinancialPipelineOutput(
+        analysis=analysis,
+        visualizations=visualizations,
+        stories=stories.stories,
+        nlp_response=nlp_response.text_response
+    )
 
 
 if __name__ == "__main__":

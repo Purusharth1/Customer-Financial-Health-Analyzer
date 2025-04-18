@@ -11,6 +11,7 @@ Key functionalities include:
 
 import json
 import re
+import sys
 from pathlib import Path
 
 import mlflow
@@ -19,6 +20,13 @@ import pdfplumber
 import PyPDF2
 from tabula import read_pdf
 
+sys.path.append(str(Path(__file__).parent.parent))
+from src.models import (
+    CustomerInfo,
+    PdfProcessingInput,
+    PdfProcessingOutput,
+    Transaction,
+)
 from src.utils import setup_mlflow
 
 
@@ -350,7 +358,7 @@ def parse_hdfc_statement_improved(pdf_path: str) -> pd.DataFrame:
                             "Date": date,
                             "Narration": narration,
                             "Reference Number": ref_no,
-                            "Value Date": value_date,  # Fixed typo: was 'value MURDATE'
+                            "Value Date": value_date,
                             "Withdrawal (INR)": withdrawal,
                             "Deposit (INR)": deposit,
                             "Closing Balance (INR)": closing_balance,
@@ -451,16 +459,46 @@ def process_single_pdf(
     return transactions_df, customer_info
 
 
+def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+    """Standardize column names and remove duplicates."""
+    # Map from various column names to standard names
+    column_mapping = {
+        "Reference_Number": "Reference Number",
+        "Value_Date": "Value Date",
+        "Withdrawal_INR": "Withdrawal (INR)",
+        "Deposit_INR": "Deposit (INR)",
+        "Closing_Balance_INR": "Closing Balance (INR)",
+    }
+
+    # Rename columns based on mapping
+    df = df.rename(columns=column_mapping)
+
+    # Select only unique columns (prefer standard names)
+    standard_columns = [
+        "Date", "Narration", "Reference Number", "Value Date",
+        "Withdrawal (INR)", "Deposit (INR)", "Closing Balance (INR)", "Source_File",
+    ]
+
+    # Keep only standard columns that exist in the DataFrame
+    existing_columns = [col for col in standard_columns if col in df.columns]
+
+    return df[existing_columns]
+
+
 def combine_transactions(all_transactions: list[pd.DataFrame]) -> pd.DataFrame:
     """Combine all transaction DataFrames into one DataFrame with validation."""
+    if not all_transactions:
+        return pd.DataFrame()
+
     combined_df = pd.concat(all_transactions, ignore_index=True)
+
+    # Standardize column names
+    combined_df = standardize_column_names(combined_df)
 
     numeric_columns = ["Withdrawal (INR)", "Deposit (INR)", "Closing Balance (INR)"]
     for col in numeric_columns:
         if col in combined_df.columns:
-            combined_df[col] = pd.to_numeric(combined_df[col], errors="coerce").fillna(
-                0.0,
-            )
+            combined_df[col] = pd.to_numeric(combined_df[col], errors="coerce").fillna(0.0)
 
     required_columns = [
         "Date",
@@ -482,21 +520,55 @@ def combine_transactions(all_transactions: list[pd.DataFrame]) -> pd.DataFrame:
 def save_combined_outputs(
     output_csv: Path,
     combined_df: pd.DataFrame,
-    all_customer_info: list[dict],
+    all_customer_info: list[CustomerInfo],
 ) -> None:
     """Save the combined transactions CSV and customer info JSON."""
     combined_df.to_csv(output_csv, index=False)
 
     json_path = output_csv.parent / "all_customers_info.json"
     with json_path.open("w") as f:
-        json.dump(all_customer_info, f, indent=4)
+        json.dump([info.dict() for info in all_customer_info], f, indent=4)
 
 
-def process_pdf_statements(
-    folder_path: str,
-    output_csv: str,
-) -> tuple[list[dict], list[pd.DataFrame]]:
+def create_transaction_objects(df: pd.DataFrame) -> list[Transaction]:
+    """Create Transaction objects from DataFrame rows, handling column naming issues."""
+    transactions = []
+    for _, row in df.iterrows():
+        # Create a clean dict with standard column names
+        transaction_data = {}
+        for column in df.columns:
+            if column == "Date":
+                transaction_data["Date"] = row["Date"]
+            elif column == "Narration":
+                transaction_data["Narration"] = row["Narration"]
+            elif column in ["Reference Number", "Reference_Number"]:
+                transaction_data["Reference Number"] = row[column]
+            elif column in ["Value Date", "Value_Date"]:
+                transaction_data["Value Date"] = row[column]
+            elif column in ["Withdrawal (INR)", "Withdrawal_INR"]:
+                transaction_data["Withdrawal (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
+            elif column in ["Deposit (INR)", "Deposit_INR"]:
+                transaction_data["Deposit (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
+            elif column in ["Closing Balance (INR)", "Closing_Balance_INR"]:
+                transaction_data["Closing Balance (INR)"] = float(row[column]) if pd.notna(row[column]) else 0.0
+            elif column == "Source_File":
+                transaction_data["Source_File"] = row["Source_File"]
+
+        try:
+            transaction = Transaction(**transaction_data)
+            transactions.append(transaction)
+        except Exception as e:
+            print(f"Error creating Transaction object: {e}")
+            # Skip this row and continue with the next one
+
+    return transactions
+
+
+def process_pdf_statements(input_model: PdfProcessingInput) -> PdfProcessingOutput:
     """Process 1 to 10 PDF statements for one person, saving combined CSV and JSON."""
+    folder_path = input_model.folder_path
+    output_csv = input_model.output_csv
+
     setup_mlflow()
     with mlflow.start_run(run_name="PDF_Parsing"):
         mlflow.log_param("folder_path", folder_path)
@@ -515,41 +587,58 @@ def process_pdf_statements(
 
         if not pdf_files:
             mlflow.log_param("warning", "No PDF files found")
-            return [], []
+            return PdfProcessingOutput(customer_info=[], transactions=[])
 
-        all_transactions: list[pd.DataFrame] = []
+        all_transactions_dfs = []
         customer_info = {}
 
         for idx, pdf_file in enumerate(pdf_files):
-            (transactions_df, customer_info) = process_single_pdf(
+            transactions_df, customer_info = process_single_pdf(
                 pdf_file,
                 customer_info,
                 idx,
             )
             if len(transactions_df) > 0:
-                all_transactions.append(transactions_df)
+                all_transactions_dfs.append(transactions_df)
                 mlflow.log_metric(
                     f"transactions_extracted_pdf_{idx}",
                     len(transactions_df),
                 )
 
-        if all_transactions:
-            combined_df = combine_transactions(all_transactions)
-            all_customer_info = [customer_info] if customer_info else []
+        if all_transactions_dfs:
+            # Combine all transaction DataFrames
+            combined_df = combine_transactions(all_transactions_dfs)
+
+            # Create customer info object
+            all_customer_info = [CustomerInfo(**customer_info)] if customer_info else []
+
+            # Save outputs
             save_combined_outputs(output_csv, combined_df, all_customer_info)
+
+            # Group transactions by source file
+            all_transactions = []
+            for source_file, group_df in combined_df.groupby("Source_File", dropna=False):
+                group_df_clean = standardize_column_names(group_df)
+                transactions = create_transaction_objects(group_df_clean)
+                all_transactions.append(transactions)
 
             mlflow.log_metric("total_transactions_extracted", len(combined_df))
             mlflow.log_metric("customer_info_records", len(all_customer_info))
+
             if output_csv.exists():
                 mlflow.log_artifact(str(output_csv))
+
             json_path = output_csv.parent / "all_customers_info.json"
             if json_path.exists():
                 mlflow.log_artifact(str(json_path))
 
-            return all_customer_info, all_transactions
+            return PdfProcessingOutput(
+                customer_info=all_customer_info,
+                transactions=all_transactions,
+            )
 
         mlflow.log_param("warning", "No transactions extracted")
-        return [], []
+        return PdfProcessingOutput(customer_info=[], transactions=[])
 
 
 def main() -> None:
@@ -558,7 +647,7 @@ def main() -> None:
         "../Customer-Financial-Health-Analyzer/data/input",
     ).resolve()
     default_output_path = Path(
-        "../Customer-Financial-Health-Analyzer/data/output",
+        "../Customer-Financial-Health-Analyzer/data/output/transactions.csv",
     ).resolve()
 
     folder_path = input(
@@ -569,25 +658,22 @@ def main() -> None:
     folder_path = Path(folder_path or default_input_path).resolve()
 
     if not folder_path.is_dir():
+        print(f"Error: {folder_path} is not a valid directory")
         return
 
     output_csv = default_output_path
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
     # Process PDFs
-    customer_info_list, transaction_dfs = process_pdf_statements(
-        str(folder_path),
-        str(output_csv),
-    )
+    input_model = PdfProcessingInput(folder_path=folder_path, output_csv=output_csv)
+    result = process_pdf_statements(input_model)
 
-    if customer_info_list and transaction_dfs:
-        combined_df = pd.concat(transaction_dfs, ignore_index=True)
-
-        deposits = combined_df["Deposit (INR)"].sum()
-        withdrawals = combined_df["Withdrawal (INR)"].sum()
-
-        if deposits == 0 or withdrawals == 0:
-            pass
+    if result.customer_info and result.transactions:
+        print(f"Successfully processed {len(result.transactions)} PDF files")
+        print(f"Total transactions extracted: {sum(len(trans) for trans in result.transactions)}")
+        print(f"Output saved to: {output_csv}")
+    else:
+        print("No transactions extracted from the PDF files")
 
 
 if __name__ == "__main__":
