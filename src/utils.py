@@ -6,6 +6,7 @@ Key functionalities include:
 - Providing helper functions for common operations (e.g., date formatting, data cleaning).
 - Ensuring consistency across the codebase with shared utilities.
 """
+
 import logging
 import os
 import sys
@@ -38,6 +39,7 @@ def sanitize_metric_name(name: str) -> str:
     # Replace invalid characters with underscores
     invalid_chars = r"[^a-zA-Z0-9_\-\.:/ ]"
     import re
+
     return re.sub(invalid_chars, "_", name)
 
 
@@ -66,6 +68,6 @@ def get_llm_config() -> LLMConfig:
     config = load_config()
     llm_settings = config.get("llm", {})
     return LLMConfig(
-        model_name=llm_settings.get("model_name", "llama3.2:3b"),
+        model_name=llm_settings.get("model_name", "qwen2.5:7b"),
         api_endpoint=llm_settings.get("api_endpoint", "http://localhost:11434"),
     )
